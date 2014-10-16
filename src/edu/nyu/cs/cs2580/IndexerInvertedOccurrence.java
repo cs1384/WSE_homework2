@@ -10,7 +10,6 @@ import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.Vector;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
@@ -22,26 +21,27 @@ public class IndexerInvertedOccurrence extends Indexer {
   private static final long serialVersionUID = 1077111905740085030L;
   
   private class Posting{
-    int did;
-    Vector<Integer> offset = new Vector<Integer>();
+    public int did;
+    //get occurance by offsets.size()
+    public Vector<Integer> offsets = new Vector<Integer>();
     public Posting(int did){
       this.did = did;
     }
   }
-  
+  //indexing result
   private Map<String, Vector<Posting>> _index = 
       new HashMap<String, Vector<Posting>>();
-  
+  //Frequency of each term in entire corpus
   private Map<String, Integer> _termCorpusFrequency = 
       new HashMap<String, Integer>();
-  
+  //map url to docid to support documentTermFrequency method
   private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
-  
+  //to store and quick access to basic document information such as title 
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
-
+  
   //Provided for serialization
   public IndexerInvertedOccurrence() { }
-  
+  //constructor
   public IndexerInvertedOccurrence(Options options) {
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
@@ -56,7 +56,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     try {
       String line = null;
       while ((line = reader.readLine()) != null) {
-        processDocument(line);
+        processDocument(line); //process each webpage
       }
     } finally {
       reader.close();
@@ -70,43 +70,47 @@ public class IndexerInvertedOccurrence extends Indexer {
     System.out.println("Store index to: " + indexFile);
     ObjectOutputStream writer =
         new ObjectOutputStream(new FileOutputStream(indexFile));
-    writer.writeObject(this);
+    writer.writeObject(this); //write the entire class into the file
     writer.close();
   }
   
   public void processDocument(String content){
-   
     //docid starts from 1
     DocumentIndexed doc = new DocumentIndexed(_documents.size()+1);
     
     Scanner s = new Scanner(content).useDelimiter("\t");
+    //Scanner s = new Scanner(content); if other format of corpus
     String title = s.next();
-    
+    //process terms in this doc to index
     StringBuilder sb = new StringBuilder();
     sb.append(title);
     sb.append(" ");
     sb.append(s.next());
     ProcessTerms(sb.toString(),doc._docid);
-    
-    int numViews = Integer.parseInt(s.next());
-    //String url = s.next();
-    //_urlToDoc.put(url, doc._docid);
+    //close scanner
     s.close();
     
     doc.setTitle(title);
+    //assign random number to doc numViews
+    int numViews = (int)(Math.random()*10000);
     doc.setNumViews(numViews);
-    //doc.setUrl(url);
+
+    String url = "en.wikipedia.org/wiki/" + title;
+    doc.setUrl(url);
+    _urlToDoc.put(url, doc._docid); //build up urlToDoc map
+    
     _documents.add(doc);
     _numDocs++;
-
     return;
   }
   
   public void ProcessTerms(String content, int docid){
+    //map for the process of this doc
     Map<String, Vector<Integer>> op = new HashMap<String,Vector<Integer>>();
     int offset = 1; //offset starts from 1
     Scanner s = new Scanner(content);
     while (s.hasNext()) {
+      //put offsets into op map
       String token = s.next();
       if(op.containsKey(token)){
         op.get(token).add(offset);
@@ -115,15 +119,19 @@ public class IndexerInvertedOccurrence extends Indexer {
         offsetTracker.add(offset);
         op.put(token, offsetTracker);
       }
+      //update the indexer variable
       if(_termCorpusFrequency.containsKey(token)){
         _termCorpusFrequency.put(token, _termCorpusFrequency.get(token)+1);
       }else{
         _termCorpusFrequency.put(token, 1);
       }
+      offset++;
     }
+    s.close();
+    //store doc map info into index map 
     for(String term : op.keySet()){
       Posting posting = new Posting(docid);
-      posting.offset = op.get(term);
+      posting.offsets = op.get(term);
       if(_index.containsKey(term)){
         _index.get(term).add(posting);
       }else{
@@ -171,8 +179,163 @@ public class IndexerInvertedOccurrence extends Indexer {
    * In HW2, you should be using {@link DocumentIndexed}.
    */
   @Override
-  public DocumentIndexed nextDoc(Query query, int docid) {
+  public Document nextDoc(QueryPhrase query, int docid) {
+    int did;
+    //keep getting document until no next available 
+    while((did = nextDocByTerms(query._tokens,docid))!=Integer.MAX_VALUE){
+      //check if the resulting doc contains all phrases 
+      for(Vector<String> phrase : query._phrases){
+        //if not, break the for loop and get next doc base on tokens
+        if(nextPositionByPhrase(phrase,did,-1)==Integer.MAX_VALUE){
+          break;
+        }
+      }
+      //create return object if passed all phrase test and return
+      DocumentIndexed result = new DocumentIndexed(did);
+      return result;
+    }
+    //no possible doc available
     return null;
+  }
+  
+  public int nextPositionByPhrase(Vector<String> phrase, int docid, int pos){
+    int did = nextDocByTerms(phrase, docid-1);
+    if(docid != did){
+      return Integer.MAX_VALUE;
+    }
+    int position = nextPositionByTerm(phrase.get(0), docid, pos); 
+    boolean returnable = true;
+    int largestPos = position;
+    int i = 1;
+    int tempPos;
+    for(;i<phrase.size();i++){
+      tempPos = nextPositionByTerm(phrase.get(i), docid, pos);
+      //one of the term will never find next
+      if(tempPos==Integer.MAX_VALUE){
+        return Integer.MAX_VALUE;
+      }
+      if(tempPos>largestPos){
+        largestPos = tempPos;
+      } 
+      if(tempPos!=position+1){
+        returnable = false;
+      }else{
+        position = tempPos;
+      }
+    }    
+    if(returnable){
+      return position;
+    }else{
+      return nextPositionByPhrase(phrase, docid, largestPos);
+    }
+    
+  }
+  
+  public int nextPositionByTerm(String term, int docid, int pos){
+    if(_index.containsKey(term)){
+      Vector<Posting> list = _index.get(term);
+      Posting op = binarySearchPosting(list, 0, list.size()-1, docid);
+      if(op==null){
+        return Integer.MAX_VALUE; 
+      }
+      int largest = op.offsets.lastElement();
+      if(largest < pos){
+        return Integer.MAX_VALUE;
+      }
+      if(op.offsets.firstElement() > pos){
+        return op.offsets.firstElement();
+      }
+      return binarySearchOffset(op.offsets,0,op.offsets.size(),pos);
+    }
+    return Integer.MAX_VALUE;
+  }
+  
+  public int binarySearchOffset(Vector<Integer> offsets, int low, int high, int pos){
+    int mid;
+    while((high-low)>1){
+      mid = (low+high)/2;
+      if(offsets.get(mid) <= pos){
+        low = mid;
+      }else{
+        high = mid;
+      }
+    }
+    return offsets.get(high);
+  }
+  
+  public Posting binarySearchPosting(
+      Vector<Posting> list, int low, int high, int docid){
+    int mid;
+    while((high-low)>1){
+      mid = (low+high)/2;
+      if(list.get(mid).did <= docid){
+        low = mid;
+      }else{
+        high = mid;
+      }
+    }
+    if(list.get(high).did==docid){
+      return list.get(high);
+    }else{
+      return null;
+    }
+  }
+  
+  public int nextDocByTerms(Vector<String> terms, int curDid){
+    if(terms.size()<=0){
+      return curDid;
+    }
+    int did = nextDocByTerm(terms.get(0), curDid); 
+    boolean returnable = true;
+    int largestDid = did;
+    int i = 1;
+    int tempDid;
+    for(;i<terms.size();i++){
+      tempDid = nextDocByTerm(terms.get(i), curDid);
+      //one of the term will never find next
+      if(tempDid==Integer.MAX_VALUE){
+        return Integer.MAX_VALUE;
+      }
+      if(tempDid>largestDid){
+        largestDid = tempDid;
+      } 
+      if(tempDid!=did){
+        returnable = false;
+      }
+    }    
+    if(returnable){
+      return did;
+    }else{
+      return nextDocByTerms(terms, largestDid-1);
+    }
+  }
+  
+  public int nextDocByTerm(String term, int curDid){
+    if(_index.containsKey(term)){
+      Vector<Posting> op = _index.get(term);
+      int largest = op.lastElement().did;
+      if(largest < curDid){
+        return Integer.MAX_VALUE;
+      }
+      if(op.firstElement().did > curDid){
+        return op.firstElement().did;
+      }
+      return binarySearchDoc(op,0,op.size()-1,curDid);
+    }
+    return Integer.MAX_VALUE;
+  }
+  
+  public int binarySearchDoc(Vector<Posting> op, int low, int high, int curDid){
+    int mid;
+    while((high-low)>1){
+      mid = (low+high)/2;
+      if(op.get(mid).did <= curDid){
+        low = mid;
+      }else{
+        high = mid;
+      }
+    }
+    return op.get(high).did;
   }
 
   @Override
@@ -197,8 +360,8 @@ public class IndexerInvertedOccurrence extends Indexer {
   public int documentTermFrequency(String term, String url) {
     if(_urlToDoc.containsKey(url)){
       int did = _urlToDoc.get(url);
-      Query query = new Query(term);
-      DocumentIndexed di = nextDoc(query,did);
+      QueryPhrase query = new QueryPhrase(term);
+      DocumentIndexed di = (DocumentIndexed)nextDoc(query,did);
       if(di!=null){
         return di.getOccurance();
       }else{
