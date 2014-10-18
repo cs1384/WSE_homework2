@@ -13,14 +13,16 @@ import java.util.Scanner;
 import java.util.Vector;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
+import java.io.File;
+import java.io.Serializable;
 
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedOccurrence extends Indexer {
-  private static final long serialVersionUID = 1077111905740085030L;
+public class IndexerInvertedOccurrence extends Indexer implements Serializable {
+  private static final long serialVersionUID = 1077111905740085032L;
   
-  private class Posting{
+  private class Posting implements Serializable{
     public int did;
     //get occurance by offsets.size()
     public Vector<Integer> offsets = new Vector<Integer>();
@@ -48,6 +50,42 @@ public class IndexerInvertedOccurrence extends Indexer {
   }
 
   @Override
+  public void constructIndex() throws IOException
+    {
+        try
+        {
+            String corpusFolder = _options._corpusPrefix + "/";
+            System.out.println("Construct index from: " + corpusFolder);
+
+            File folder = new File(corpusFolder);
+            for (final File file : folder.listFiles())
+            {
+                System.out.println(file.getName());
+
+                String text = TestParse2.getPlainText(file);
+
+                //Doing this so that processDocument() doesn't break
+                text = file.getName().replace('_', ' ') + "\t" + text;
+                processDocument(text); //process each webpage
+            }
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        System.out.println(
+                "Indexed " + Integer.toString(_numDocs) + " docs with "
+                + Long.toString(_totalTermFrequency) + " terms.");
+
+        String indexFile = _options._indexPrefix + "/corpus.idx";
+        System.out.println("Store index to: " + indexFile);
+        ObjectOutputStream writer
+                = new ObjectOutputStream(new FileOutputStream(indexFile));
+        writer.writeObject(this); //write the entire class into the file
+        writer.close();
+
+    }
+  /*
   public void constructIndex() throws IOException {
     String corpusFile = _options._corpusPrefix + "/corpus.tsv";
     System.out.println("Construct index from: " + corpusFile);
@@ -73,7 +111,9 @@ public class IndexerInvertedOccurrence extends Indexer {
     writer.writeObject(this); //write the entire class into the file
     writer.close();
   }
+  */
   
+  /*
   public void processDocument(String content){
     //docid starts from 1
     DocumentIndexed doc = new DocumentIndexed(_documents.size()+1);
@@ -103,6 +143,57 @@ public class IndexerInvertedOccurrence extends Indexer {
     _numDocs++;
     return;
   }
+  */
+  public void processDocument(String content)
+    {
+        String title = "";
+        StringBuilder sb;
+        Scanner s = null;
+        try
+        {
+            //docid starts from 1
+
+            s = new Scanner(content).useDelimiter("\t");
+            //Scanner s = new Scanner(content); if other format of corpus
+            title = s.next();
+            //process terms in this doc to index
+            sb = new StringBuilder();
+            sb.append(title);
+            sb.append(" ");
+            sb.append(s.next());
+            //close scanner
+        } catch (Exception e)
+        {
+            //IF SHI!T HAPPENS, IGNORE DOC AND MOVE ON, FOR NOW...
+            return;
+        } finally
+        {
+            if (s != null)
+            {
+                s.close();
+            }
+        }
+
+        DocumentIndexed doc = new DocumentIndexed(_documents.size() + 1);
+        doc.setTitle(title);
+        String text = sb.toString();
+        //System.out.println(text);
+        //System.out.println("title = " + title);
+        ProcessTerms(text, doc._docid);
+        //assign random number to doc numViews
+        int numViews = (int) (Math.random() * 10000);
+        doc.setNumViews(numViews);
+
+        String url = "en.wikipedia.org/wiki/" + title;
+        doc.setUrl(url);
+        _urlToDoc.put(url, doc._docid); //build up urlToDoc map
+
+        _documents.add(doc);
+        _numDocs++;
+
+        return;
+    }
+
   
   public void ProcessTerms(String content, int docid){
     //map for the process of this doc
@@ -164,6 +255,8 @@ public class IndexerInvertedOccurrence extends Indexer {
     this._urlToDoc = loaded._urlToDoc;
     reader.close();
 
+    printIndex();
+    
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
         "with " + Long.toString(_totalTermFrequency) + " terms!");
     
@@ -371,4 +464,37 @@ public class IndexerInvertedOccurrence extends Indexer {
       return 0;
     }
   }
+  
+  public void printIndex()
+    {
+        //Map<String, Vector<Posting>> _index
+        for (Map.Entry<String, Vector<Posting>> entry : _index.entrySet())
+        {
+            String key = entry.getKey();
+            Vector<Posting> vec = entry.getValue();
+
+            //System.out.println("key = " + key);
+            System.out.print(key + ": ");
+            
+            for (int i = 0; i < vec.size(); i++)
+            {
+                //System.out.println("\tDoc id = " + vec.get(i).did);
+                System.out.print("(");
+                System.out.print(vec.get(i).did + ", ");
+                
+                Vector<Integer> offsets = vec.get(i).offsets;
+                System.out.print(offsets.size() + ", [");
+
+                for (int j = 0; j < offsets.size(); j++)
+                {
+                    System.out.print(offsets.get(j) + ", ");
+                }
+                
+                System.out.print("]), ");
+            }
+            System.out.println("");
+
+        }
+        
+    }
 }
