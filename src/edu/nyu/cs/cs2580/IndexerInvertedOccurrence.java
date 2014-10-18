@@ -13,6 +13,7 @@ import java.util.Scanner;
 import java.util.Vector;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
+
 import java.io.File;
 import java.io.Serializable;
 
@@ -48,7 +49,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
   }
-
+  /*
   @Override
   public void constructIndex() throws IOException
     {
@@ -61,7 +62,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
             for (final File file : folder.listFiles())
             {
                 System.out.println(file.getName());
-
                 String text = TestParse2.getPlainText(file);
 
                 //Doing this so that processDocument() doesn't break
@@ -85,7 +85,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         writer.close();
 
     }
-  /*
+    */
+
   public void constructIndex() throws IOException {
     String corpusFile = _options._corpusPrefix + "/corpus.tsv";
     System.out.println("Construct index from: " + corpusFile);
@@ -111,7 +112,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     writer.writeObject(this); //write the entire class into the file
     writer.close();
   }
-  */
   
   /*
   public void processDocument(String content){
@@ -144,6 +144,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     return;
   }
   */
+  
   public void processDocument(String content)
     {
         String title = "";
@@ -217,6 +218,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         _termCorpusFrequency.put(token, 1);
       }
       offset++;
+      _totalTermFrequency++;
     }
     s.close();
     //store doc map info into index map 
@@ -255,7 +257,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     this._urlToDoc = loaded._urlToDoc;
     reader.close();
 
-    printIndex();
+    //printIndex();
     
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
         "with " + Long.toString(_totalTermFrequency) + " terms!");
@@ -273,19 +275,26 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
    */
   @Override
   public Document nextDoc(QueryPhrase query, int docid) {
-    int did;
+    boolean keep = false;
+    int did = docid;
     //keep getting document until no next available 
-    while((did = nextDocByTerms(query._tokens,docid))!=Integer.MAX_VALUE){
+    while((did = nextDocByTerms(query._tokens,did))!=Integer.MAX_VALUE){
+      keep = false;
       //check if the resulting doc contains all phrases 
       for(Vector<String> phrase : query._phrases){
         //if not, break the for loop and get next doc base on tokens
         if(nextPositionByPhrase(phrase,did,-1)==Integer.MAX_VALUE){
+          keep = true;
           break;
         }
       }
-      //create return object if passed all phrase test and return
-      DocumentIndexed result = new DocumentIndexed(did);
-      return result;
+      if(keep){
+        continue;
+      }else{
+        //create return object if passed all phrase test and return
+        DocumentIndexed result = new DocumentIndexed(did);
+        return result;
+      }
     }
     //no possible doc available
     return null;
@@ -376,7 +385,13 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   public int nextDocByTerms(Vector<String> terms, int curDid){
     if(terms.size()<=0){
-      return curDid;
+      if(curDid<=0){
+        return 1;
+      }else if(curDid>=_numDocs){
+        return Integer.MAX_VALUE;
+      }else{
+        return curDid+1;
+      }
     }
     int did = nextDocByTerm(terms.get(0), curDid); 
     boolean returnable = true;
@@ -497,4 +512,30 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         }
         
     }
+  public static void main(String args[]){
+    try {
+      Options options = new Options("conf/engine.conf");
+      IndexerInvertedOccurrence a = new IndexerInvertedOccurrence(options);
+      //a.constructIndex();
+      a.loadIndex();
+      QueryPhrase q11 = new QueryPhrase("kicktin");
+      QueryPhrase q12 = new QueryPhrase("kicktin kickass");
+      QueryPhrase q13 = new QueryPhrase("\"kicktin kickass\"");
+      
+      DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
+      System.out.println(d11._docid);
+      DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
+      System.out.println(d12._docid);
+      DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
+      System.out.println(d13._docid);
+      
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    
+  }
 }
