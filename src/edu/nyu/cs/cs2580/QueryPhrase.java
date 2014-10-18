@@ -10,6 +10,7 @@ import java.util.Vector;
  */
 public class QueryPhrase extends Query {
 
+  //a vector to store onyl the phrases
   public Vector<Vector<String>> _phrases = new Vector<Vector<String>>();
   
   public QueryPhrase(String query) {
@@ -19,10 +20,11 @@ public class QueryPhrase extends Query {
 
   @Override
   public void processQuery() {
-    if(_query==null)
+    if(_query==null){
       return;
-    char[] chars = _query.trim().toCharArray();
-    System.out.println(_query);
+    }
+    char[] chars = _query.trim().toCharArray(); 
+    //System.out.println(_query);
     StringBuilder sb = new StringBuilder();
     Vector<String> phrase = new Vector<String>();
     boolean inPhrase = false;
@@ -33,7 +35,9 @@ public class QueryPhrase extends Query {
           phrase.add(sb.toString());
           sb.setLength(0);
           sb.trimToSize();
-          _phrases.add(phrase);
+          Vector<String> temp = new Vector<String>();
+          temp.addAll(phrase);
+          _phrases.add(temp);
           phrase.clear();
         }
         inPhrase = inPhrase?false:true;
@@ -59,11 +63,15 @@ public class QueryPhrase extends Query {
       sb.setLength(0);
       sb.trimToSize();
     }
+    //System.out.println(phrase);
   }
   
   public static void main(String args[]){
-    QueryPhrase qp = new QueryPhrase(" test \"tin is cool\" \"kiss\" dad");
+    //QueryPhrase qp = new QueryPhrase(" test \"tin is cool\" \"kiss\" dad");
+    QueryPhrase qp = new QueryPhrase("and \"kicktin kickass\" \"ts er\"");
     System.out.println(qp._tokens);
     System.out.println(qp._phrases.size());
+    System.out.println(qp._phrases.get(0));
+    System.out.println(qp._phrases.get(1));
   }
 }

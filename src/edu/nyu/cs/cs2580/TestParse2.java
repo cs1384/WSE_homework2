@@ -1,9 +1,14 @@
 package edu.nyu.cs.cs2580;
 
 import java.io.File;
-import org.jsoup.*;
-import org.jsoup.nodes.*;
-import org.jsoup.select.*;
+//import org.jsoup.*;
+//import org.jsoup.nodes.*;
+//import org.jsoup.select.*;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.jsoup.nodes.Document;
 
 public class TestParse2
 {
@@ -13,7 +18,7 @@ public class TestParse2
         String plain = "";
         try
         {
-            org.jsoup.nodes.Document doc = Jsoup.parse(input, "UTF-8", "");
+            Document doc = Jsoup.parse(input, "UTF-8", "");
 
             Elements bodys = doc.getElementsByTag("body");
 
@@ -49,7 +54,7 @@ public class TestParse2
 
     public static void main(String argv[])
     {
-        System.out.println(TestParse2.getPlainText("Alaska"));
+        System.out.println(TestParse2.getPlainText(argv[1]));
 
     }
 
