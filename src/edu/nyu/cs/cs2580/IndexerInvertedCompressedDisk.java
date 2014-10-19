@@ -4,14 +4,17 @@ import java.io.IOException;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.Stack;
 import java.util.Vector;
 
 /**
@@ -54,10 +58,16 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
     {
         super(options);
         System.out.println("Using Indexer: " + this.getClass().getSimpleName());
+        
+                   
     }
 
     private void constructPartialIndex(int id, List<File> listOfFiles)
     {
+        
+        
+        
+               
         //Map<String, Vector<Integer>> _indexTemp = new HashMap<String, Vector<Integer>>();
         Map<String, Vector<Posting>> _indexTemp = new HashMap<String, Vector<Posting>>();
         try
@@ -80,6 +90,7 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
                 if(count % 100 == 0)
                 {
                     System.out.println("Processed " + count + " documents");
+                    /*
                     int mb = 1024*1024;
                     //Getting the runtime reference from system
                     Runtime runtime = Runtime.getRuntime();
@@ -88,6 +99,7 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
                     System.out.println("Free Memory:" + runtime.freeMemory() / mb);
                     System.out.println("Total Memory:" + runtime.totalMemory() / mb);
                     System.out.println("Max Memory:" + runtime.maxMemory() / mb);
+                    */
                 }
             }
         } 
@@ -96,31 +108,72 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
             e.printStackTrace();
         }
 
-        System.out.println("Partially Indexed " + Integer.toString(_numDocs) + " docs with " + Long.toString(_totalTermFrequency) + " terms.");
+        
 
         try
         {
             //now write this temp hashmap to a file
+            /*
             String indexFile = _options._indexPrefix + "/partial_cmpr_corpus_" + id + ".idx";
             System.out.println("Store index to: " + indexFile);
             ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(indexFile));
             writer.writeObject(_indexTemp); //write the entire class into the file
             writer.close();
+            */
+            
+            //write the index out to a file, in alphabetical order:
+            Set<String> keys = _indexTemp.keySet();
+            Vector<String> keysVec = new Vector<String>();
+            for(String s : keys)
+                keysVec.add(s);
+            Collections.sort(keysVec);
+                
+            System.out.println("Writing file...");
+            BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/partial_cmpr_corpus_" + id + ".txt")));
+            StringBuilder sb = new StringBuilder();
+            sb.append(keysVec.size());
+            sb.append("\n");
+            for(String term : keysVec)
+            {
+                Vector<Posting> pv = _indexTemp.get(term);
+                
+                sb.append(term).append(" ");
+                
+                for(Posting p : pv)
+                {
+                        sb.append(p.did).append(" ");
+                        sb.append(p.offsets.size()).append(" ");
+                        for(Integer o : p.offsets)
+                        {
+                            sb.append(o).append(" ");
+                        }
+                }
+                sb.append("\n");
+                
+            }
+            bw.write(sb.toString());
+            bw.close();
+            System.out.println("Partially Indexed " + Integer.toString(_numDocs) + " docs with " + Long.toString(_totalTermFrequency) + " terms.");
+            
         }
         catch(Exception e)
         {
             e.printStackTrace();;
         }
+        
+        
+        
     }
     
     @Override
     public void constructIndex() throws IOException
     {
+        int count = 0;
         try
         {
             String corpusFolder = _options._corpusPrefix + "/";
             System.out.println("Construct index from: " + corpusFolder);
-            int count = 0;
+            
             File folder = new File(corpusFolder);
             ArrayList<File> fileList = new ArrayList<File>();
             for (final File file : folder.listFiles())
@@ -128,17 +181,18 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
                 fileList.add(file);
             }
             
-            int lower=0, upper = 100;
+            int lower=0, upper = 500;
             int id = 0;
             for(id=0;lower < fileList.size();id++)
             {
-                System.out.println("1.  low = " + lower + " , upper = " + upper);
+                //System.out.println("1.  low = " + lower + " , upper = " + upper);
                 if(upper > fileList.size())
                     upper = fileList.size();
-                System.out.println("2.  low = " + lower + " , upper = " + upper);
+                //System.out.println("2.  low = " + lower + " , upper = " + upper);
                 constructPartialIndex(id, fileList.subList(lower, upper));
                 lower = upper;
-                upper += 100;
+                upper += 500;
+                count++;
             }
         } 
         catch (Exception e)
@@ -150,7 +204,20 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
                 "Indexed " + Integer.toString(_numDocs) + " docs with "
                 + Long.toString(_totalTermFrequency) + " terms.");
 
-        
+        try
+        {
+            File f = new File(_options._indexPrefix + "/partial_cmpr_corpus_merged_0.txt");
+            f.createNewFile();            
+
+            for(int i=0;i<count;i++)
+            {
+                mergeIndices(i) ;
+            }
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();;
+        } 
     }
 
     public void processDocument(String content, String title, Map<String, Vector<Posting>> _indexTemp)
@@ -232,31 +299,155 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
     }
     }
     
-    public void mergeIndices(int numOfIndices)
+    public void mergeIndices(int id) 
     {
         //for(int i=0;)
+        try
+        {
+            BufferedReader br1 = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/partial_cmpr_corpus_" + id + ".txt")));
+            BufferedReader br2 = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/partial_cmpr_corpus_merged_" + id + ".txt")));
+            
+            //BufferedReader br1 = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/__A.txt")));
+            //BufferedReader br2 = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/__B.txt")));
+            
+            BufferedWriter outBw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/partial_cmpr_corpus_merged_" + (id+1) + ".txt")));
+            
+            //int file1Size = Integer.parseInt(br1Line1);
+            //int file2Size = Integer.parseInt(br2Line1);
+            
+            //now walk the files, and write to a new file
+            int i=1, j=1;
+            String file1Line = br1.readLine();
+            String file2Line = br2.readLine();
+                
+            //while(i < file1Size && j < file2Size)
+            while(file1Line != null && file2Line != null)
+            {
+                //System.out.println("file1 = " + file1Line);
+                //System.out.println("file2 = " + file2Line);
+                String tokens1[] = file1Line.split(" ");
+                String tokens2[] = file2Line.split(" ");
+                
+                String word1 = tokens1[0];
+                String word2 = tokens2[0];
+                
+                if(word1.compareTo(word2) < 0)
+                {
+                    outBw.write(file1Line + "\n");
+                    file1Line = br1.readLine();
+                    i++;
+                }
+                else if(word1.compareTo(word2) > 0)
+                {
+                    outBw.write(file2Line + "\n");
+                    file2Line = br2.readLine();
+                    j++;
+                }
+                else
+                {
+                    //System.out.println("here 3");
+                    //need to merge
+                    //parse tokens1 and tokens2 into a postings list
+                    Vector<Posting> allPosting = new Vector<Posting>();
+                    
+                    //tokens1
+                    int k;
+                    for(k=1;k<tokens1.length;)
+                    {
+                        int docId = Integer.parseInt(tokens1[k]);
+                        int numOffsets = Integer.parseInt(tokens1[k+1]);
+                        //System.out.println("doc id= " + docId);
+                        //System.out.println("numoffsets= " + numOffsets);
+                        Posting p = new Posting(docId);
+                        for(int l=k+2;l<k+2+numOffsets;l++)
+                        {
+                            //System.out.println("  offset= " + tokens1[l]);
+                            p.offsets.add(Integer.parseInt(tokens1[l]));
+                        }
+                        allPosting.add(p);
+                        k = k+2+numOffsets;
+                    }
+                    
+                    //tokens2
+                    for(k=1;k<tokens2.length;)
+                    {
+                        int docId = Integer.parseInt(tokens2[k]);
+                        int numOffsets = Integer.parseInt(tokens2[k+1]);
+                        //System.out.println("doc id2 = " + docId);
+                        //System.out.println("numoffsets2 = " + numOffsets);
+                        
+                        Posting p = new Posting(docId);
+                        for(int l=k+2;l<k+2+numOffsets;l++)
+                            p.offsets.add(Integer.parseInt(tokens2[l]));
+                        allPosting.add(p);
+                        k = k+2+numOffsets;
+                    }
+                    
+                    allPosting.sort(Comparator);
+                    
+                    file1Line = br1.readLine();
+                    file2Line = br2.readLine();
+                     
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(tokens1[0]).append(" ");
+                
+                        //System.out.println("----------");
+                        
+                    for(Posting p : allPosting)
+                    {
+                            sb.append(p.did).append(" ");
+                            sb.append(p.offsets.size()).append(" ");
+                            //System.out.println("doc id= " + p.did);
+                            //System.out.println("numoffsets= " + p.offsets.size());
+                        
+                            for(Integer o : p.offsets)
+                            {
+                                sb.append(o).append(" ");
+                            }
+                    }
+                    sb.append("\n");
+                    outBw.write(sb.toString());
+                    i++;
+                    j++;
+                }
+                
+            }
+            
+            while(file1Line != null)
+            {
+                //System.out.println("extra1 = " + file1Line);
+                outBw.write(file1Line + "\n");
+                file1Line = br1.readLine();
+                i++;
+            }
+            while(file2Line != null)
+            {
+                //System.out.println("extra2 = " + file2Line);
+                outBw.write(file2Line + "\n");
+                file2Line = br2.readLine();
+                j++;                
+            }
+            //System.out.println("CLose writer");
+            outBw.close();
+            br1.close();
+            br2.close();
+            
+            //delete
+            File f1 = new File(_options._indexPrefix + "/partial_cmpr_corpus_" + id + ".txt");
+            File f2 = new File(_options._indexPrefix + "/partial_cmpr_corpus_merged_" + id + ".txt");
+            
+            f1.delete();
+            f2.delete();
+            
+            
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
     }
     
-    public Map<String, Vector<Posting>> mergeIndices(Map<String, Vector<Posting>> map1, Map<String, Vector<Posting>> map2)
-    {
-        Set<String> union = new HashSet<String>(map1.keySet());
-        union.addAll(map2.keySet());
-        
-        Map<String, Vector<Posting>> newMap = new HashMap<String, Vector<Posting>>();
-        
-        for(String str : union)
-        {
-            Vector<Posting> vec = new Vector<Posting>();
-            if(map1.containsKey(str))
-                vec.addAll(map1.get(str));
-            if(map2.containsKey(str))
-                vec.addAll(map2.get(str));
-            
-            //vec.sort(Comparator);
-            newMap.put(str, vec);
-        }
-        return newMap;
-    }
+    
 
     @Override
     public void loadIndex() throws IOException, ClassNotFoundException
@@ -724,5 +915,5 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
             this.did = did;
         }
     }
-    
+
 }

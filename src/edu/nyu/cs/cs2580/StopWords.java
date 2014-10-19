@@ -20,6 +20,7 @@ public class StopWords
     ArrayList<String> words;
     public StopWords(Options options)
     {
+        System.out.println("Stopwords");
         words = new ArrayList<String>();
         try
         {
@@ -27,8 +28,10 @@ public class StopWords
             String line;
             while((line = bf.readLine()) != null)
             {
+                System.out.println(line);
                 words.add(line);
             }
+            System.out.println("Added stopwords");
         }
         catch(Exception e)
         {
