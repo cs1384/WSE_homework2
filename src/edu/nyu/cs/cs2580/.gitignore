@@ -27,3 +27,16 @@
 /SearchEngine.class
 /IndexerInvertedOccurrence$Posting.class
 /TestParse2.class
+/IndexerInvertedCompressed$ByteArray.class
+/IndexerInvertedCompressedDisk$1.class
+/IndexerInvertedCompressedDisk$ByteArray.class
+/IndexerInvertedCompressedDisk$Posting.class
+/IndexerInvertedCompressedDisk.class
+/StopWords.class
+/TestParse3.class
+/VByteEncoder.class
+/IndexerInvertedOccurrenceOffsetOffset$Posting.class
+/IndexerInvertedOccurrenceOffsetOffset.class
+/IndexInvertedOccurance.class
+/IndexerInvertedOccurrenceOffset$Posting.class
+/IndexerInvertedOccurrenceOffset.class
