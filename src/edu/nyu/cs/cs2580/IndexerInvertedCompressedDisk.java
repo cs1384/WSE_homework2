@@ -12,15 +12,19 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.Vector;
 
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedCompressed extends Indexer implements Serializable
+public class IndexerInvertedCompressedDisk extends Indexer implements Serializable
 {
     //indexing result
     
@@ -28,7 +32,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
     //private Map<String, ArrayList<Integer>> _index = new HashMap<String, ArrayList<Integer>>();
     
 //private Map<String, ArrayList<Byte>> _indexTemp = new HashMap<String, ArrayList<Byte>>();
-    private Map<String, ByteArray> _indexTemp = new HashMap<String, ByteArray>();
+    //private Map<String, ByteArray> _indexTemp = new HashMap<String, ByteArray>();
     private Map<String, int[]> _indexInts = new HashMap<String, int[]>();
     private Map<String, byte[]> _index = new HashMap<String, byte[]>();
     //Frequency of each term in entire corpus
@@ -42,74 +46,103 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
     private static final long serialVersionUID = 1077111905740085031L;
 
     
-    public IndexerInvertedCompressed()
+    public IndexerInvertedCompressedDisk()
     {
     }
 
-    public IndexerInvertedCompressed(Options options)
+    public IndexerInvertedCompressedDisk(Options options)
     {
         super(options);
         System.out.println("Using Indexer: " + this.getClass().getSimpleName());
     }
 
-    @Override
-    public void constructIndex() throws IOException
+    private void constructPartialIndex(int id, List<File> listOfFiles)
     {
+        //Map<String, Vector<Integer>> _indexTemp = new HashMap<String, Vector<Integer>>();
+        Map<String, Vector<Posting>> _indexTemp = new HashMap<String, Vector<Posting>>();
         try
         {
-            stopWords = new StopWords(_options);
-                    
-            String corpusFolder = _options._corpusPrefix + "/";
-            System.out.println("Construct index from: " + corpusFolder);
             int count = 0;
-            File folder = new File(corpusFolder);
-            for (final File file : folder.listFiles())
+            
+            for (File file : listOfFiles)
             {
                 //System.out.println(file.getName());
 
                 String text = TestParse2.getPlainText(file);
 
-                //Doing this so that processDocument() doesn't break
-                //text = file.getName().replace('_', ' ') + "\t" + text;
                 String title = file.getName().replace('_', ' ');
                 text = title + " " + text;
-                processDocument(text, title); //process each webpage
+                
+                processDocument(text, title, _indexTemp); //process each webpage
+                
                 count++;
                 
                 if(count % 100 == 0)
                 {
                     System.out.println("Processed " + count + " documents");
-                    
-                    
-                    
-                    
                     int mb = 1024*1024;
-         
-        //Getting the runtime reference from system
-        Runtime runtime = Runtime.getRuntime();
-         
-        System.out.println("##### Heap utilization statistics [MB] #####");
-         
-        //Print used memory
-        System.out.println("Used Memory:"
-            + (runtime.totalMemory() - runtime.freeMemory()) / mb);
- 
-        //Print free memory
-        System.out.println("Free Memory:"
-            + runtime.freeMemory() / mb);
-         
-        //Print total available memory
-        System.out.println("Total Memory:" + runtime.totalMemory() / mb);
- 
-        //Print Maximum available memory
-        System.out.println("Max Memory:" + runtime.maxMemory() / mb);
-        
-        
-        
+                    //Getting the runtime reference from system
+                    Runtime runtime = Runtime.getRuntime();
+                    System.out.println("##### Heap utilization statistics [MB] #####");
+                    System.out.println("Used Memory:" + (runtime.totalMemory() - runtime.freeMemory()) / mb);
+                    System.out.println("Free Memory:" + runtime.freeMemory() / mb);
+                    System.out.println("Total Memory:" + runtime.totalMemory() / mb);
+                    System.out.println("Max Memory:" + runtime.maxMemory() / mb);
         
                 }
             }
-        } catch (Exception e)
+        } 
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        System.out.println("Partially Indexed " + Integer.toString(_numDocs) + " docs with " + Long.toString(_totalTermFrequency) + " terms.");
+
+        try
+        {
+            //now write this temp hashmap to a file
+            String indexFile = _options._indexPrefix + "/partial_cmpr_corpus_" + id + ".idx";
+            System.out.println("Store index to: " + indexFile);
+            ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(indexFile));
+            writer.writeObject(_indexTemp); //write the entire class into the file
+            writer.close();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();;
+        }
+    }
+    
+    @Override
+    public void constructIndex() throws IOException
+    {
+        try
+        {
+            String corpusFolder = _options._corpusPrefix + "/";
+            System.out.println("Construct index from: " + corpusFolder);
+            int count = 0;
+            File folder = new File(corpusFolder);
+            ArrayList<File> fileList = new ArrayList<File>();
+            for (final File file : folder.listFiles())
+            {
+                fileList.add(file);
+            }
+            
+            int lower=0, upper = 100;
+            int id = 0;
+            for(id=0;lower < fileList.size();id++)
+            {
+                System.out.println("1.  low = " + lower + " , upper = " + upper);
+                if(upper > fileList.size())
+                    upper = fileList.size();
+                System.out.println("2.  low = " + lower + " , upper = " + upper);
+                constructPartialIndex(id, fileList.subList(lower, upper));
+                lower = upper;
+                upper += 100;
+            }
+        } 
+        catch (Exception e)
         {
             e.printStackTrace();
         }
@@ -118,45 +151,10 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
                 "Indexed " + Integer.toString(_numDocs) + " docs with "
                 + Long.toString(_totalTermFrequency) + " terms.");
 
-        //Before writing, create an integer array and then get rid of vector of ints
         
-        
-        for(Map.Entry<String, ByteArray > entry : _indexTemp.entrySet())
-        {
-            /*
-            int tempArray[] = new int[entry.getValue().size()];
-            for(int i=0;i<entry.getValue().size();i++)
-                tempArray[i] = entry.getValue().get(i);
-            
-            _indexInts.put(entry.getKey(), tempArray);
-            */
-            //System.out.println("key = " + entry.getKey());
-            
-            ByteArray byteList = entry.getValue();
-            byte tempArray[] = new  byte[byteList.size()];
-            for(int i=0;i<byteList.size();i++)
-            {
-                tempArray[i] = byteList.get(i);
-                //System.out.print((int)tempArray[i]);
-            }
-            //System.out.println("");
-            _indexTemp.put(entry.getKey(), null);
-            
-            _index.put(entry.getKey(), tempArray);
-            
-        }
-        _indexTemp = null;
-        stopWords = null;
-        
-        String indexFile = _options._indexPrefix + "/compressed_corpus.idx";
-        System.out.println("Store index to: " + indexFile);
-        ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(indexFile));
-        writer.writeObject(this); //write the entire class into the file
-        writer.close();
-
     }
 
-    public void processDocument(String content, String title)
+    public void processDocument(String content, String title, Map<String, Vector<Posting>> _indexTemp)
     {
         //String title = "";
         
@@ -167,7 +165,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
         //System.out.println(text);
         //System.out.println("title = " + title);
         
-        ProcessTerms(text, doc._docid);
+        ProcessTerms(text, doc._docid, _indexTemp);
 
         //assign random number to doc numViews
         int numViews = (int) (Math.random() * 10000);
@@ -182,7 +180,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
 
     }
 
-    public void ProcessTerms(String content, int docid)
+    public void ProcessTerms(String content, int docid, Map<String, Vector<Posting>> _indexTemp)
     {
         //map for the process of this doc
         Map<String, Vector<Integer>> op = new HashMap<String, Vector<Integer>>();
@@ -195,8 +193,8 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
             //System.out.println(token);
             token = token.toLowerCase();
             
-            if(stopWords.wordInList(token))
-                continue;
+            //if(stopWords.wordInList(token))
+            //    continue;
             
             if (op.containsKey(token))
             {
@@ -222,58 +220,43 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
         s.close();
 
         //store doc map info into index map 
-        for (String term : op.keySet())
+        for(String term : op.keySet()){
+      Posting posting = new Posting(docid);
+      posting.offsets = op.get(term);
+      if(_indexTemp.containsKey(term)){
+        _indexTemp.get(term).add(posting);
+      }else{
+        Vector<Posting> docTracker = new Vector<Posting>();
+        docTracker.add(posting);
+        _indexTemp.put(term, docTracker);
+      }
+    }
+    }
+    
+    public void mergeIndices(int numOfIndices)
+    {
+        //for(int i=0;)
+    }
+    
+    public Map<String, Vector<Posting>> mergeIndices(Map<String, Vector<Posting>> map1, Map<String, Vector<Posting>> map2)
+    {
+        Set<String> union = new HashSet<String>(map1.keySet());
+        union.addAll(map2.keySet());
+        
+        Map<String, Vector<Posting>> newMap = new HashMap<String, Vector<Posting>>();
+        
+        for(String str : union)
         {
-            //ArrayList<Integer> intArray = new ArrayList <Integer>();
+            Vector<Posting> vec = new Vector<Posting>();
+            if(map1.containsKey(str))
+                vec.addAll(map1.get(str));
+            if(map2.containsKey(str))
+                vec.addAll(map2.get(str));
             
-            //Posting posting = new Posting(docid);
-            
-            Vector<Integer> opList = op.get(term);
-            //int intArray[] = new int[opList.size()];
-            /*
-            int prev = opList.get(0);
-            intArray[0] = prev;
-            for(int i=1;i<opList.size();i++)
-            {
-                intArray[i] = (opList.get(i) - prev);
-                prev = opList.get(i);
-            }
-              */      
-           
-            if (!_indexTemp.containsKey(term))
-                _indexTemp.put(term, new ByteArray());
-            
-            //question: can we now guess the number of entries using num of docs and freqs??
-            
-            //Posting list contains docId and number of occurences
-            ByteArray termPosting = _indexTemp.get(term);
-            
-            byte bArray[] = VByteEncoder.encode(docid);
-            for(byte b : bArray)
-                termPosting.add(b);  
-
-            bArray = VByteEncoder.encode(opList.size());
-            for(byte b : bArray)
-                termPosting.add(b);  
-
-            
-            //Now add offsets to posting list
-            int prev = opList.get(0);
-            bArray = VByteEncoder.encode(prev);
-            for(byte b : bArray)
-                termPosting.add(b);  
-
-            for(int j=1;j<opList.size();j++)
-            {
-                int x = opList.get(j);
-                bArray = VByteEncoder.encode(x - prev);
-                for(byte b : bArray)
-                    termPosting.add(b);  
-
-                prev = x;
-            }
-
+            vec.sort(Comparator);
+            newMap.put(str, vec);
         }
+        return newMap;
     }
 
     @Override
@@ -283,7 +266,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
         System.out.println("Load index from: " + indexFile);
 
         ObjectInputStream reader = new ObjectInputStream(new FileInputStream(indexFile));
-        IndexerInvertedCompressed loaded = (IndexerInvertedCompressed) reader.readObject();
+        IndexerInvertedCompressedDisk loaded = (IndexerInvertedCompressedDisk) reader.readObject();
 
         this._documents = loaded._documents;
         // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
@@ -717,6 +700,30 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
         }
         
         
+    }
+    
+    public static final Comparator<Posting> Comparator = new Comparator<Posting>()
+    {
+
+        @Override
+        public int compare(Posting o1, Posting o2) 
+        {
+            if(o1.did == o2.did) return 0;
+            return (o1.did < o2.did) ? -1 : 1;	//To sort in descending order
+        }
+
+    };
+    private class Posting implements Serializable
+    {
+        
+        public int did;
+        //get occurance by offsets.size()
+        public Vector<Integer> offsets = new Vector<Integer>();
+        
+        public Posting(int did)
+        {
+            this.did = did;
+        }
     }
     
 }
