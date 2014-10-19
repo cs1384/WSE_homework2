@@ -101,6 +101,36 @@ public class VByteEncoder
         return intArray;
     }
     
+    public static int[] getFirstNum(byte array[], int start)
+    {
+        int lastByteOfFirstNum = 0;
+        for(int i=start;i<array.length;i++)
+        {
+            byte b = array[i];
+            boolean last = ((b & (byte)(1 << 7)) != 0);
+            if(last)
+            {
+                lastByteOfFirstNum = i;
+                break;
+            }
+            
+        } 
+        byte firstNum[] = new byte[lastByteOfFirstNum - start + 1];
+        for(int i=start;i<=lastByteOfFirstNum;i++)
+        {
+            firstNum[i-start] = array[i];
+        }
+        //System.out.println("lastByteOfFirstNum = " + lastByteOfFirstNum);
+        int nextLoc = lastByteOfFirstNum + 1;
+        int answer = decode(firstNum).get(0);
+        
+        int x[] = new int[2];
+        x[0] = (answer);
+        x[1] = (nextLoc);
+        return x;
+        
+    }
+    
     public static void main(String[] args)
     {
 

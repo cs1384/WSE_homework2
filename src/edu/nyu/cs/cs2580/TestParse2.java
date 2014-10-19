@@ -1,6 +1,7 @@
 package edu.nyu.cs.cs2580;
 
 import java.io.File;
+import java.io.IOException;
 //import org.jsoup.*;
 //import org.jsoup.nodes.*;
 //import org.jsoup.select.*;
@@ -19,7 +20,6 @@ public class TestParse2
         try
         {
             Document doc = Jsoup.parse(input, "UTF-8", "");
-
             Elements bodys = doc.getElementsByTag("body");
 
             for (Element body : bodys)
@@ -27,7 +27,8 @@ public class TestParse2
                 plain = body.text();
                 plain = plain.replaceAll("[^a-zA-Z0-9\\s]", " ");
             }
-        } catch (Exception e)
+        } 
+        catch (IOException e)
         {
             e.printStackTrace();
         } finally
