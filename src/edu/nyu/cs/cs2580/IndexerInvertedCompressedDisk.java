@@ -88,7 +88,6 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
                     System.out.println("Free Memory:" + runtime.freeMemory() / mb);
                     System.out.println("Total Memory:" + runtime.totalMemory() / mb);
                     System.out.println("Max Memory:" + runtime.maxMemory() / mb);
-        
                 }
             }
         } 
@@ -253,7 +252,7 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
             if(map2.containsKey(str))
                 vec.addAll(map2.get(str));
             
-            vec.sort(Comparator);
+            //vec.sort(Comparator);
             newMap.put(str, vec);
         }
         return newMap;
