@@ -41,10 +41,14 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   private Map<Integer, Vector<Posting>> _index = 
       new HashMap<Integer, Vector<Posting>>();
   //Frequency of each term in entire corpus
-  private Map<Integer, Integer> _termCorpusFrequency = 
-      new HashMap<Integer, Integer>();
+  
+  //private Map<Integer, Integer> _termCorpusFrequency = 
+      //new HashMap<Integer, Integer>();
+  
   //map url to docid to support documentTermFrequency method
-  private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
+  
+  //private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
+  
   //to store and quick access to basic document information such as title 
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private int _uniqueTerms = 0;
@@ -281,7 +285,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
         String url = "en.wikipedia.org/wiki/" + title;
         doc.setUrl(url);
-        _urlToDoc.put(url, doc._docid); //build up urlToDoc map
+        //_urlToDoc.put(url, doc._docid); //build up urlToDoc map
 
         _documents.add(doc);
         _numDocs++;
@@ -300,7 +304,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
     String url = "en.wikipedia.org/wiki/" + title;
     doc.setUrl(url);
-    _urlToDoc.put(url, doc._docid); //build up urlToDoc map
+    //_urlToDoc.put(url, doc._docid); //build up urlToDoc map
 
     _documents.add(doc);
     _numDocs++;
@@ -331,11 +335,13 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         termN = _uniqueTerms;
       }
       //update the indexer variable
+      /*
       if(_termCorpusFrequency.containsKey(termN)){
         _termCorpusFrequency.put(termN, _termCorpusFrequency.get(termN)+1);
       }else{
         _termCorpusFrequency.put(termN, 1);
       }
+      */
       offset++;
       _totalTermFrequency++;
     }
@@ -380,11 +386,13 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         termN = _uniqueTerms;
       }
       //update the indexer variable
+      /*
       if(_termCorpusFrequency.containsKey(termN)){
         _termCorpusFrequency.put(termN, _termCorpusFrequency.get(termN)+1);
       }else{
         _termCorpusFrequency.put(termN, 1);
       }
+      */
       offset++;
       _totalTermFrequency++;
     }
@@ -417,13 +425,15 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     this._documents = loaded._documents;
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
+    /*
     for (Integer freq : loaded._termCorpusFrequency.values()) {
       this._totalTermFrequency += freq;
     }
+    */
    
     this._index = loaded._index;
-    this._termCorpusFrequency = loaded._termCorpusFrequency;
-    this._urlToDoc = loaded._urlToDoc;
+    //this._termCorpusFrequency = loaded._termCorpusFrequency;
+    //this._urlToDoc = loaded._urlToDoc;
     reader.close();
 
     //printIndex();
@@ -628,15 +638,18 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   @Override
   public int corpusTermFrequency(String term) {
+    /*
     if(_termCorpusFrequency.containsKey(term)){
       return _termCorpusFrequency.get(term);
-    }else{
-      return 0;
     }
+    */
+    return 0;
+    
   }
 
   @Override
   public int documentTermFrequency(String term, String url) {
+    /*
     if(_urlToDoc.containsKey(url)){
       int did = _urlToDoc.get(url);
       QueryPhrase query = new QueryPhrase(term);
@@ -646,9 +659,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       }else{
         return 0;
       }
-    }else{
-      return 0;
     }
+    */
+    return 0;
   }
   
   /*
