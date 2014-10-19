@@ -24,8 +24,9 @@ public class TestParse2
 
             for (Element body : bodys)
             {
-                plain = body.text();
+                plain = body.text().toLowerCase();
                 plain = plain.replaceAll("[^a-zA-Z0-9\\s]", " ");
+                
             }
         } catch (Exception e)
         {
