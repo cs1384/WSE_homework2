@@ -252,7 +252,7 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
             if(map2.containsKey(str))
                 vec.addAll(map2.get(str));
             
-            vec.sort(Comparator);
+            //vec.sort(Comparator);
             newMap.put(str, vec);
         }
         return newMap;

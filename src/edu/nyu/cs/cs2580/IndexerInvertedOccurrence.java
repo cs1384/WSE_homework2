@@ -42,12 +42,12 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       new HashMap<Integer, Vector<Posting>>();
   //Frequency of each term in entire corpus
   
-  //private Map<Integer, Integer> _termCorpusFrequency = 
-      //new HashMap<Integer, Integer>();
+  private Map<Integer, Integer> _termCorpusFrequency = 
+      new HashMap<Integer, Integer>();
   
   //map url to docid to support documentTermFrequency method
   
-  //private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
+  private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
   
   //to store and quick access to basic document information such as title 
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
@@ -64,6 +64,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   @Override
   public void constructIndex() throws IOException
   {
+    /*
       try
       {
           String corpusFolder = _options._corpusPrefix + "/";
@@ -91,9 +92,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       {
           e.printStackTrace();
       }
+      */
       
-      
-    /*
+    
     try
     {
         String corpusFolder = _options._corpusPrefix + "/";
@@ -111,23 +112,24 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     } catch (Exception e){
           e.printStackTrace();
     }
-    */
+    
 
       System.out.println(
               "Indexed " + Integer.toString(_numDocs) + " docs with "
               + Long.toString(_totalTermFrequency) + " terms.");
       System.out.println(_uniqueTerms);
 
-      /*
+      
       String indexFile = _options._indexPrefix + "/corpus.idx";
       System.out.println("Store index to: " + indexFile);
       ObjectOutputStream writer
               = new ObjectOutputStream(new FileOutputStream(indexFile));
       writer.writeObject(this); //write the entire class into the file
       writer.close();
-      */
+      
 
   }
+  
   
   private void constructPartialIndex(int id, List<File> listOfFiles){
     //Map<String, Vector<Integer>> _indexTemp = new HashMap<String, Vector<Integer>>();
@@ -285,7 +287,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
         String url = "en.wikipedia.org/wiki/" + title;
         doc.setUrl(url);
-        //_urlToDoc.put(url, doc._docid); //build up urlToDoc map
+        _urlToDoc.put(url, doc._docid); //build up urlToDoc map
 
         _documents.add(doc);
         _numDocs++;
@@ -304,7 +306,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
     String url = "en.wikipedia.org/wiki/" + title;
     doc.setUrl(url);
-    //_urlToDoc.put(url, doc._docid); //build up urlToDoc map
+    _urlToDoc.put(url, doc._docid); //build up urlToDoc map
 
     _documents.add(doc);
     _numDocs++;
@@ -335,13 +337,11 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         termN = _uniqueTerms;
       }
       //update the indexer variable
-      /*
       if(_termCorpusFrequency.containsKey(termN)){
         _termCorpusFrequency.put(termN, _termCorpusFrequency.get(termN)+1);
       }else{
         _termCorpusFrequency.put(termN, 1);
       }
-      */
       offset++;
       _totalTermFrequency++;
     }
@@ -386,13 +386,11 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         termN = _uniqueTerms;
       }
       //update the indexer variable
-      /*
       if(_termCorpusFrequency.containsKey(termN)){
         _termCorpusFrequency.put(termN, _termCorpusFrequency.get(termN)+1);
       }else{
         _termCorpusFrequency.put(termN, 1);
       }
-      */
       offset++;
       _totalTermFrequency++;
     }
@@ -425,15 +423,13 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     this._documents = loaded._documents;
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
-    /*
     for (Integer freq : loaded._termCorpusFrequency.values()) {
       this._totalTermFrequency += freq;
     }
-    */
    
     this._index = loaded._index;
-    //this._termCorpusFrequency = loaded._termCorpusFrequency;
-    //this._urlToDoc = loaded._urlToDoc;
+    this._termCorpusFrequency = loaded._termCorpusFrequency;
+    this._urlToDoc = loaded._urlToDoc;
     reader.close();
 
     //printIndex();
@@ -638,11 +634,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   @Override
   public int corpusTermFrequency(String term) {
-    /*
     if(_termCorpusFrequency.containsKey(term)){
       return _termCorpusFrequency.get(term);
     }
-    */
     return 0;
     
   }
@@ -716,11 +710,11 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
       System.out.println(d13._docid);
       */
-      /*
+      
       QueryPhrase q11 = new QueryPhrase("Zatanna");
       DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
       System.out.println(d11._docid);
-      */
+      
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
