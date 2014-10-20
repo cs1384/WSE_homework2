@@ -40,3 +40,6 @@
 /IndexInvertedOccurance.class
 /IndexerInvertedOccurrenceOffset$Posting.class
 /IndexerInvertedOccurrenceOffset.class
+/IndexerInvertedCompressed$Pair.class
+/IndexerInvertedOccurrence$Pecord.class
+/IndexerInvertedOccurrence$Record.class
