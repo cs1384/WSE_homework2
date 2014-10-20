@@ -360,7 +360,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     makeIndex();
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
-    
+    this._totalTermFrequency = 0;
     for (Record rc : _index.values()) {
       this._totalTermFrequency += rc.fre;
     }
@@ -383,7 +383,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   /**
    * In HW2, you should be using {@link DocumentIndexed}.
    */
-  @Override
   public Document nextDoc(QueryPhrase query, int docid) {
     boolean keep = false;
     int did = docid;
@@ -412,7 +411,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   public int nextPositionByPhrase(Vector<String> phrase, int docid, int pos){
     int did = nextDocByTerms(phrase, docid-1);
-    //System.out.println("did"+did);
     //System.out.println("docid"+docid);
     if(docid != did){
       return Integer.MAX_VALUE;
@@ -507,7 +505,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         return curDid+1;
       }
     }
-    int did = nextDocByTerm(terms.get(0), curDid); 
+    //System.out.println("term" + curDid);
+    int did = nextDocByTerm(terms.get(0), curDid);
     boolean returnable = true;
     int largestDid = did;
     int i = 1;
@@ -536,7 +535,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     Vector<Posting> op = this.getPostingList(term);
     if(op.size()>0){
       int largest = op.lastElement().did;
-      if(largest < curDid){
+      //System.out.println("largest"+largest);
+      if(largest <= curDid){
         return Integer.MAX_VALUE;
       }
       if(op.firstElement().did > curDid){
@@ -659,15 +659,15 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       //a.constructIndex();
       a.loadIndex();
       
-      QueryPhrase q11 = new QueryPhrase("\"zatanna kicktin\" multiple");
-      QueryPhrase q12 = new QueryPhrase("\"new york city\" film");
-      QueryPhrase q13 = new QueryPhrase("\"kickass kicktin\"");
+      QueryPhrase q11 = new QueryPhrase("\"Bert Kaempfert\" television");
+      //QueryPhrase q12 = new QueryPhrase("\"new york city\" film");
+      //QueryPhrase q13 = new QueryPhrase("\"kickass kicktin\"");
       DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
       System.out.println(d11._docid);
-      DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
-      System.out.println(d12._docid);
-      DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
-      System.out.println(d13._docid);
+      //DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
+      //System.out.println(d12._docid);
+      //DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
+      //System.out.println(d13._docid);
       
       /*
       QueryPhrase q11 = new QueryPhrase("kicktin");
@@ -684,5 +684,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       e.printStackTrace();
     }
     
+  }
+  public Document nextDoc(Query query, int docid) {
+    // TODO Auto-generated method stub
+    return null;
   }
 }
