@@ -16,7 +16,7 @@ import java.util.Vector;
 public class Query {
   public String _query = null;
   public Vector<String> _tokens = new Vector<String>();
-
+  private Stemmer stemmer = new Stemmer();
   public Query(String query) {
     _query = query;
   }
@@ -26,8 +26,12 @@ public class Query {
       return;
     }
     Scanner s = new Scanner(_query);
-    while (s.hasNext()) {
-      _tokens.add(s.next());
+    while (s.hasNext()) 
+    {
+        String token = s.next();
+        stemmer.add(token.toCharArray(), token.length());
+        stemmer.stem();
+        _tokens.add(token);
     }
     s.close();
   }

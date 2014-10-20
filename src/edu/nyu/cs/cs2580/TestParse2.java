@@ -27,8 +27,10 @@ public class TestParse2
                 plain = body.text();
                 plain = plain.replaceAll("[^a-zA-Z0-9\\s]", " ");
             }
+            
+            
         } 
-        catch (IOException e)
+        catch (Exception e)
         {
             e.printStackTrace();
         } finally
