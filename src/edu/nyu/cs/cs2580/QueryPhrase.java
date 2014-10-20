@@ -43,7 +43,7 @@ public class QueryPhrase extends Query {
       switch(c){
       case '"':
         if(inPhrase && sb.length()>0){
-          phrase.add(sb.toString());
+          phrase.add(sb.toString().toLowerCase());
           sb.setLength(0);
           sb.trimToSize();
           Vector<String> temp = new Vector<String>();
@@ -55,11 +55,11 @@ public class QueryPhrase extends Query {
         break;
       case ' ':
         if(inPhrase && sb.length()>0){
-          phrase.add(sb.toString());
+          phrase.add(sb.toString().toLowerCase());
           sb.setLength(0);
           sb.trimToSize();
         }else if(!inPhrase && sb.length()>0){
-          _tokens.add(sb.toString());
+          _tokens.add(sb.toString().toLowerCase());
           sb.setLength(0);
           sb.trimToSize();
         }
@@ -70,7 +70,7 @@ public class QueryPhrase extends Query {
       }
     }
     if(sb.length()>0){
-      _tokens.add(sb.toString());
+      _tokens.add(sb.toString().toLowerCase());
       sb.setLength(0);
       sb.trimToSize();
     }
@@ -79,10 +79,9 @@ public class QueryPhrase extends Query {
   
   public static void main(String args[]){
     //QueryPhrase qp = new QueryPhrase(" test \"tin is cool\" \"kiss\" dad");
-    QueryPhrase qp = new QueryPhrase("and \"kicktin kickass\" \"ts er\"");
+    QueryPhrase qp = new QueryPhrase("\"Bert Kaempfert\" programming");
     System.out.println(qp._tokens);
     System.out.println(qp._phrases.size());
     System.out.println(qp._phrases.get(0));
-    System.out.println(qp._phrases.get(1));
   }
 }

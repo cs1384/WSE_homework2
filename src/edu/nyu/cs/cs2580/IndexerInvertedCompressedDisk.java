@@ -3,6 +3,7 @@ package edu.nyu.cs.cs2580;
 import java.io.IOException;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -14,6 +15,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -519,7 +521,10 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
                         k = k+2+numOffsets;
                     }
                     
+<<<<<<< HEAD
                     //allPosting.sort(Comparator);
+=======
+>>>>>>> 32a694d1676aabe2931b0ab638c3f401f607e776
                     Collections.sort(allPosting, Comparator);
                     
                     file1Line = br1.readLine();
