@@ -1,5 +1,6 @@
 package edu.nyu.cs.cs2580;
 
+import java.net.URLDecoder;
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -23,6 +24,16 @@ public class QueryPhrase extends Query {
     if(_query==null){
       return;
     }
+    try
+    {
+        _query = URLDecoder.decode(_query, "UTF-8").toLowerCase();
+    }
+    catch(Exception e)
+    {
+        e.printStackTrace();
+        return;
+    }
+    
     char[] chars = _query.trim().toCharArray(); 
     //System.out.println(_query);
     StringBuilder sb = new StringBuilder();
