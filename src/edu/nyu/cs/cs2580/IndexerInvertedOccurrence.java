@@ -93,7 +93,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         fileList.add(file);
       }
       
-      int lower=0, upper = 150;
+      int lower=0, upper = 200;
       int takeTurn = 0;
       while(lower < fileList.size()){
         System.out.println("range:  low = " + lower + " , upper = " + upper);
@@ -105,7 +105,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         mergeFiles(takeTurn); //merge previous output files
         _op.clear();
         lower = upper;
-        upper += 150;
+        upper += 200;
         takeTurn = takeTurn + 2;
       } 
       finalConstruction(takeTurn);
@@ -138,8 +138,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         String text = TestParse2.getPlainText(file);
         processDocument(text,file.getName()); //process each webpage
         count++; 
-        if(count % 150 == 0){
-          printRuntimeInfo("====== 150 files =======");
+        if(count % 200 == 0){
+          printRuntimeInfo("====== 200 files =======");
         }
       }
     }catch(Exception e){
@@ -300,7 +300,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     DocumentIndexed doc = new DocumentIndexed(_documents.size() + 1);
     
     doc.setTitle(filename.replace('_', ' '));
-    ProcessTerms(content, doc._docid);
+    doc.setSize(ProcessTerms(content, doc._docid));
     int numViews = (int) (Math.random() * 10000);
     doc.setNumViews(numViews);
 
@@ -313,8 +313,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     return;
   }
   
-  public void ProcessTerms(String content, int docid){
-    //map for the process of this doc
+  public int ProcessTerms(String content, int docid){
+    
     int offset = 1; //offset starts from 1
     Scanner s = new Scanner(content);
     String token;
@@ -344,6 +344,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       _totalTermFrequency++;
     }
     s.close();
+    return offset-1;
   }
 
   @Override
@@ -656,9 +657,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     try {
       Options options = new Options("conf/engine.conf");
       IndexerInvertedOccurrence a = new IndexerInvertedOccurrence(options);
-      //a.constructIndex();
-      a.loadIndex();
-      
+      a.constructIndex();
+      //a.loadIndex();
+      /*
       QueryPhrase q11 = new QueryPhrase("\"Bert Kaempfert\" television");
       //QueryPhrase q12 = new QueryPhrase("\"new york city\" film");
       //QueryPhrase q13 = new QueryPhrase("\"kickass kicktin\"");
@@ -668,7 +669,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       //System.out.println(d12._docid);
       //DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
       //System.out.println(d13._docid);
-      
+      */
       /*
       QueryPhrase q11 = new QueryPhrase("kicktin");
       DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);

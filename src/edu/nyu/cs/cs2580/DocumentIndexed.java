@@ -8,7 +8,8 @@ import java.util.Vector;
  */
 public class DocumentIndexed extends Document {
   private static final long serialVersionUID = 9184892508124423115L;
-
+  private int docSize = -1;
+  
   private String query = "";
   int occurance = 0;
   
@@ -30,6 +31,14 @@ public class DocumentIndexed extends Document {
   
   public int getOccurance(){
     return this.occurance;
+  }
+  
+  public void setSize(int size){
+    this.docSize = size;
+  }
+  
+  public int getSize(){
+    return this.docSize;
   }
   
 }
