@@ -57,7 +57,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       new TreeMap<String, Vector<Posting>>();
   
   //map url to docid to support documentTermFrequency method,optional 
-  private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
+  //private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
   
   //to store and quick access to basic document information such as title 
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
@@ -93,7 +93,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
           upper = fileList.size();
         }
         constructPartialIndex(fileList.subList(lower, upper),batch++);
-        //writeToIndexFile(batch++);
         _op.clear();
         lower = upper;
         upper += 250;
@@ -283,10 +282,10 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     int numViews = (int) (Math.random() * 10000);
     doc.setNumViews(numViews);
 
-    String url = "en.wikipedia.org/wiki/" + filename;
-    doc.setUrl(url);
+    //String url = "en.wikipedia.org/wiki/" + filename;
+    //doc.setUrl(url);
     //build up urlToDoc map
-    _urlToDoc.put(filename, doc._docid);
+    //_urlToDoc.put(filename, doc._docid);
     _documents.add(doc);
     _numDocs++;
     return;
@@ -351,7 +350,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     }
    
     this._op = loaded._op;
-    this._urlToDoc = loaded._urlToDoc;
+    //this._urlToDoc = loaded._urlToDoc;
     reader.close();
     this.printRuntimeInfo("======== Done =========");
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
@@ -614,7 +613,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   @Override
   public int documentTermFrequency(String term, String url) {
-    
+    System.out.println("not implemented!");
+    /*
     String[] temp = url.split("/");
     String key = temp[temp.length-1];
     if(_urlToDoc.containsKey(key)){
@@ -627,7 +627,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         return 0;
       }
     }
-    return 0;
+    */
+    return 1;
   }
   
   public void printRuntimeInfo(String msg){
