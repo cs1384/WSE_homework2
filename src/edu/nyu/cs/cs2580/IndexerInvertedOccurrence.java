@@ -117,7 +117,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     catch(Exception e)
     {
         e.printStackTrace();;
-    } 
+    }
+    makeIndex();
     
     System.out.println(
         "Indexed " + Integer.toString(_numDocs) + " docs with "
@@ -235,6 +236,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     try{
       int indexId = 0;
       BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
+      //BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_Wiki.txt")));
       BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+indexId+".txt")));
       String line = br.readLine();
       int lineN = 1;
@@ -282,8 +284,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     int numViews = (int) (Math.random() * 10000);
     doc.setNumViews(numViews);
 
-    //String url = "en.wikipedia.org/wiki/" + filename;
-    //doc.setUrl(url);
+    String url = "en.wikipedia.org/wiki/" + filename;
+    doc.setUrl(url);
     //build up urlToDoc map
     //_urlToDoc.put(filename, doc._docid);
     _documents.add(doc);
@@ -341,7 +343,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         (IndexerInvertedOccurrence) reader.readObject();
 
     this._documents = loaded._documents;
-    makeIndex();
+    //makeIndex();
+    this._index = loaded._index;
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
     this._totalTermFrequency = 0;
@@ -613,22 +616,13 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   @Override
   public int documentTermFrequency(String term, String url) {
-    System.out.println("not implemented!");
-    /*
-    String[] temp = url.split("/");
-    String key = temp[temp.length-1];
-    if(_urlToDoc.containsKey(key)){
-      int did = _urlToDoc.get(key);
-      QueryPhrase query = new QueryPhrase(term);
-      DocumentIndexed di = (DocumentIndexed)nextDoc(query,did-1);
-      if(di!=null){
-        return di.getOccurance();
-      }else{
-        return 0;
+    Vector<Posting> op = this.getPostingList(term);
+    for(int i=0;i<op.size();i++){
+      if(_documents.get(op.get(i).did-1).getUrl().equals(url)){
+        return op.get(i).offsets.size();
       }
     }
-    */
-    return 1;
+    return 0;
   }
   
   public void printRuntimeInfo(String msg){
@@ -647,8 +641,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     try {
       Options options = new Options("conf/engine.conf");
       IndexerInvertedOccurrence a = new IndexerInvertedOccurrence(options);
-      //a.constructIndex();
-      a.loadIndex();
+      a.constructIndex();
+      //a.loadIndex();
       //a.getPostingList("zatanna");
       
       //QueryPhrase q11 = new QueryPhrase("which");
@@ -657,7 +651,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       //DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
       //System.out.println(d11._docid);
       DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
-      System.out.println(d12.getTitle());
+      System.out.println(d12.getUrl());
       //DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
       //System.out.println(d13._docid);
       /*
