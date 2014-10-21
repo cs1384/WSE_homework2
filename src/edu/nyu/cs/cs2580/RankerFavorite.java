@@ -15,7 +15,7 @@ import java.util.Collections;
  * on the instructors' {@link IndexerFullScan}, instead it should use one of
  * your more efficient implementations.
  */
-<<<<<<< HEAD
+
 public class RankerFavorite extends Ranker {
   private double lambda = 0.5;
   
@@ -34,76 +34,7 @@ public class RankerFavorite extends Ranker {
   }
 
   @Override
-  public Vector<ScoredDocument> runQuery(Query query, int numResults) {
-    Queue<ScoredDocument> rankQueue = new PriorityQueue<ScoredDocument>();
-    DocumentIndexed doc = null;
-    int docid = -1;
-    while ((doc = (DocumentIndexed)_indexer.nextDoc(query, docid)) != null) {
-      rankQueue.add(scoreDocument(query, doc._docid));
-      if (rankQueue.size() > numResults) {
-        rankQueue.poll();
-      }
-      docid = doc._docid;
-    }
-    
-    Vector<ScoredDocument> results = new Vector<ScoredDocument>();
-    ScoredDocument scoredDoc = null;
-    while ((scoredDoc = rankQueue.poll()) != null) {
-      results.add(scoredDoc);
-    }
-    Collections.sort(results, Collections.reverseOrder());
-    return results;
-    
-  }
-  
-  private ScoredDocument scoreDocument(Query query, int did) {
-    // Process the raw query into tokens.
-    ((QueryPhrase)query).processQuery();
-    // Get the document tokens.
-    DocumentIndexed doc = (DocumentIndexed) _indexer.getDoc(did);
-    double score = 0.0;
-    
-    for(int i = 0;i<((QueryPhrase)query)._tokens.size();i++){
-      String str = ((QueryPhrase)query)._tokens.get(i);
-      score += Math.log10(
-          (1-lambda)
-          *_indexer.documentTermFrequency(str, doc.getUrl())
-          / ((DocumentIndexed)doc).getSize() 
-          + lambda
-          * _indexer.corpusTermFrequency(str)
-          /_indexer._totalTermFrequency);
-    }
-    for(int i = 0;i<((QueryPhrase)query)._phrases.size();i++){
-      for(int j = 0;j<((QueryPhrase)query)._phrases.get(i).size();j++){
-      String str = ((QueryPhrase)query)._phrases.get(i).get(j);
-      score += Math.log10(
-          (1-lambda)
-          *_indexer.documentTermFrequency(str, doc.getUrl())
-          / ((DocumentIndexed)doc).getSize() 
-          + lambda
-          * _indexer.corpusTermFrequency(str)
-          /_indexer._totalTermFrequency);
-      }
-    }
-    score = Math.pow(10,score);
-    return new ScoredDocument(doc, score);
-  }
-  
-=======
-public class RankerFavorite extends Ranker
-{
-
-    public RankerFavorite(Options options, CgiArguments arguments, Indexer indexer)
-    {
-        super(options, arguments, indexer);
-        
-        System.out.println("Using Ranker: " + this.getClass().getSimpleName());
-        System.out.println("Using Indexer: " + indexer.getClass().getSimpleName());
-        
-    }
-
-    @Override
-    public Vector<ScoredDocument> runQuery(Query query, int numResults)
+  public Vector<ScoredDocument> runQuery(Query query, int numResults)
     {
         //System.out.println("SSS");
         
@@ -121,13 +52,15 @@ public class RankerFavorite extends Ranker
                 //System.out.println("d = " + d._docid);
                 //System.out.println("found in " + d.getUrl());
                 
-                ScoredDocument sd = new ScoredDocument(d, 1);
+                //ScoredDocument sd = new ScoredDocument(d, 1);
+                ScoredDocument sd = scoreDocument(qp, d._docid);
+                
                 retrievedDocs.add(sd);
                 d = this._indexer.nextDoc(qp, d._docid);
                 
             }
             
-            Collections.sort(retrievedDocs);
+            Collections.sort(retrievedDocs, Collections.reverseOrder());
             
             return retrievedDocs;
         }
@@ -139,5 +72,34 @@ public class RankerFavorite extends Ranker
         
         return null;
     }
->>>>>>> 11e5525dd5288189d89793d8791dae15f8f9d75e
+  
+  private ScoredDocument scoreDocument(QueryPhrase query, int did) {
+
+    DocumentIndexed doc = (DocumentIndexed) _indexer.getDoc(did);
+    if(doc == null)
+          System.out.println("Null doc");
+    double score = 0.0;
+    
+      
+    for(int i = 0;i<query._tokens.size();i++)
+    {
+      String str = query._tokens.get(i);
+      
+      int freq = _indexer.documentTermFrequency(str, doc.getUrl());
+      
+      
+      score += Math.log10(
+          (1-lambda)
+          *_indexer.documentTermFrequency(str, doc.getUrl())
+          / ((DocumentIndexed)doc).getSize() 
+          + lambda
+          * _indexer.corpusTermFrequency(str)
+          /_indexer._totalTermFrequency);
+       
+    }
+    
+    score = Math.pow(10,score);
+    return new ScoredDocument(doc, score);
+  }
+  
 }

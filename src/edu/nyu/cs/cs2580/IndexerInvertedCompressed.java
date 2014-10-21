@@ -537,14 +537,15 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
      * In HW2, you should be using {@link DocumentIndexed}.
      */
     @Override
-    public Document nextDoc(QueryPhrase query, int docid)
+    public Document nextDoc(Query query, int docid)
     {
         int did;
         //keep getting document until no next available 
         while ((did = nextDocByTerms(query._tokens, docid)) != Integer.MAX_VALUE)
         {
             //check if the resulting doc contains all phrases 
-            for (Vector<String> phrase : query._phrases)
+          if(query instanceof QueryPhrase){  
+            for (Vector<String> phrase : ((QueryPhrase)query)._phrases)
             {
                 //if not, break the for loop and get next doc base on tokens
                 if (nextPositionByPhrase(phrase, did, -1) == Integer.MAX_VALUE)
@@ -552,6 +553,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable
                     break;
                 }
             }
+          }
             //create return object if passed all phrase test and return
             DocumentIndexed result = new DocumentIndexed(did);
             return result;

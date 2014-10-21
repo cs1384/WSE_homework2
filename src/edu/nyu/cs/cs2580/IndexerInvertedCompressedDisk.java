@@ -67,7 +67,7 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
     public IndexerInvertedCompressedDisk(Options options)
     {
         super(options);
-        System.out.println("Using Indexer: " + this.getClass().getSimpleName());
+        System.out.println("Using IndexerCDisk: " + this.getClass().getSimpleName());
         
                    
     }
@@ -521,10 +521,7 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
                         k = k+2+numOffsets;
                     }
                     
-<<<<<<< HEAD
                     //allPosting.sort(Comparator);
-=======
->>>>>>> 32a694d1676aabe2931b0ab638c3f401f607e776
                     Collections.sort(allPosting, Comparator);
                     
                     file1Line = br1.readLine();
@@ -730,7 +727,7 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
     }
 
     @Override
-    public Document nextDoc(QueryPhrase query, int docid)
+    public Document nextDoc(Query query, int docid)
     {
         //System.out.println("here 1");
         Vector<String> queryVec = query._tokens;
@@ -937,5 +934,51 @@ public class IndexerInvertedCompressedDisk extends Indexer implements Serializab
         }
         
         
+    }
+    
+    public static void main(String args[]){
+      /*
+      File file = new File("/Users/Tin/Desktop/test.txt");
+      try {
+        String line = FileUtils.readLines(file).get(2).toString();
+        System.out.println("|" + line + "|");
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+      */
+      
+      
+      try {
+        Options options = new Options("conf/engine.conf");
+        IndexerInvertedCompressedDisk a = new IndexerInvertedCompressedDisk(options);
+        a.constructIndex();
+        a.loadIndex();
+        
+        QueryPhrase q11 = new QueryPhrase("which");
+        //QueryPhrase q12 = new QueryPhrase("\"new york city\" film");
+        //QueryPhrase q13 = new QueryPhrase("\"kickass kicktin\"");
+        DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
+        System.out.println(d11._docid);
+        //DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
+        //System.out.println(d12._docid);
+        //DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
+        //System.out.println(d13._docid);
+        
+        /*
+        QueryPhrase q11 = new QueryPhrase("kicktin");
+        DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
+        System.out.println(d11._docid);
+        //System.out.println(a.nextDocByTerm("kicktin", -1));
+        */
+        
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (Exception e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+      
     }
 }

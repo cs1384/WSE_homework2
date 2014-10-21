@@ -60,7 +60,7 @@ public abstract class Indexer {
    * @return the next Document after {@code docid} satisfying {@code query} or
    * null if no such document exists.
    */
-  public abstract Document nextDoc(QueryPhrase query, int docid);
+  public abstract Document nextDoc(Query query, int docid);
 
   // APIs for index construction and loading.
 
@@ -137,10 +137,5 @@ public abstract class Indexer {
       }
       return null;
     }
-  }
-
-  public Document nextDoc(Query query, int docid) {
-    // TODO Auto-generated method stub
-    return null;
   }
 }

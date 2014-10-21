@@ -34,11 +34,6 @@ public class IndexerInvertedDoconly extends Indexer {
   public Document nextDoc(Query query, int docid) {
     return null;
   }
-
-  @Override
-  public Document nextDoc(QueryPhrase query, int docid) {
-        return null;
-  }
   
   @Override
   public int corpusDocFrequencyByTerm(String term) {
