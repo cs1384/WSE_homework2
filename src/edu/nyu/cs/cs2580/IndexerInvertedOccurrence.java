@@ -244,6 +244,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         this._uniqueTerms++;
         bw.write(line);
         bw.write("\n");
+        
         StringTokenizer st = new StringTokenizer(line);
         String term = st.nextToken();
         fre = 0;
