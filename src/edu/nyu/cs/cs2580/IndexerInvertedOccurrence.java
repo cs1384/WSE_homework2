@@ -118,7 +118,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     {
         e.printStackTrace();;
     }
-    //makeIndex();
+    makeIndex();
     
     System.out.println(
         "Indexed " + Integer.toString(_numDocs) + " docs with "
@@ -239,7 +239,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+indexId+".txt")));
       String line = br.readLine();
       int lineN = 1;
-      int fre, op, j;
       while(line!=null){
         bw.write(line);
         bw.write("\n");
@@ -253,9 +252,18 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       }
       bw.close();
       br.close();
-      br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
-      line = br.readLine();
-      lineN = 1;
+    }catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+  
+  public void buildIndex(){
+    try{
+      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
+      String line = br.readLine();
+      int lineN = 1;
+      int fre, op, j;
       while(line!=null){
         this._uniqueTerms++;
         
@@ -351,7 +359,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
     this._documents = loaded._documents;
     this._index = loaded._index;
-    makeIndex();
+    buildIndex();
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
     this._totalTermFrequency = 0;
@@ -378,6 +386,11 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
    * In HW2, you should be using {@link DocumentIndexed}.
    */
   public Document nextDoc(Query query, int docid) {
+    if(query instanceof QueryPhrase){
+      ((QueryPhrase)query).processQuery();
+    }else{
+      query.processQuery();
+    }
     boolean keep = false;
     int did = docid;
     //keep getting document until no next available 
