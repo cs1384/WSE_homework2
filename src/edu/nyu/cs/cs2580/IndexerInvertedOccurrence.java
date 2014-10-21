@@ -59,6 +59,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   //map url to docid to support documentTermFrequency method,optional 
   //private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
   
+  private short _indexFileN = 0;
   //to store and quick access to basic document information such as title 
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private int _uniqueTerms = 0;
@@ -118,7 +119,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     {
         e.printStackTrace();;
     }
-    buildIndex();
+    makeIndex();
     
     System.out.println(
         "Indexed " + Integer.toString(_numDocs) + " docs with "
@@ -234,18 +235,17 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   public void makeIndex(){
     try{
-      int indexId = 0;
       BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
-      BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+indexId+".txt")));
+      BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+this._indexFileN+".txt")));
       String line = br.readLine();
       int lineN = 1;
       while(line!=null){
         bw.write(line);
         bw.write("\n");
         if(lineN%10000==0){
-          indexId++;
+          this._indexFileN++;
           bw.close();
-          bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+indexId+".txt")));
+          bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+this._indexFileN+".txt")));
         }
         lineN++;
         line = br.readLine();
@@ -260,29 +260,31 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   public void buildIndex(){
     try{
-      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
-      String line = br.readLine();
+      int i = 0;
       int lineN = 1;
-      int fre, op, j;
-      while(line!=null){
-        this._uniqueTerms++;
-        
-        StringTokenizer st = new StringTokenizer(line);
-        String term = st.nextToken();
-        fre = 0;
-        while(st.hasMoreTokens()){
-          st.nextToken(); //docid
-          op = Integer.parseInt(st.nextToken()); //occurance
-          fre += op;
-          for(j=0;j<op;j++){
-            st.nextToken();
+      while(i<this._indexFileN){
+        BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
+        int fre, op, j;
+        String line = br.readLine();
+        while(line!=null){
+          this._uniqueTerms++;
+          StringTokenizer st = new StringTokenizer(line);
+          String term = st.nextToken();
+          fre = 0;
+          while(st.hasMoreTokens()){
+            st.nextToken(); //docid
+            op = Integer.parseInt(st.nextToken()); //occurance
+            fre += op;
+            for(j=0;j<op;j++){
+              st.nextToken();
+            }
           }
+          _index.put(term,new Record(lineN,fre));
+          lineN++;
+          line = br.readLine();
         }
-        _index.put(term,new Record(lineN,fre));
-        lineN++;
-        line = br.readLine();
+        br.close();
       }
-      br.close();
     }catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -359,7 +361,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
     this._documents = loaded._documents;
     this._index = loaded._index;
-    makeIndex();
+    this._indexFileN = loaded._indexFileN;
+    buildIndex();
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
     this._totalTermFrequency = 0;
@@ -661,10 +664,12 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     try {
       Options options = new Options("conf/engine.conf");
       IndexerInvertedOccurrence a = new IndexerInvertedOccurrence(options);
-      a.constructIndex();
+      //a.constructIndex();
       a.loadIndex();
       //a.getPostingList("zatanna");
       
+      
+      System.out.println(a._index.containsKey("zatanna"));
       //QueryPhrase q11 = new QueryPhrase("which");
       QueryPhrase q12 = new QueryPhrase("\"zatanna zatara\" Catwoman imprison");
       //QueryPhrase q13 = new QueryPhrase("\"kickass kicktin\"");
