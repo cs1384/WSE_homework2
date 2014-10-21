@@ -382,7 +382,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         continue;
       }else{
         //create return object if passed all phrase test and return
-        DocumentIndexed result = new DocumentIndexed(did);
+        DocumentIndexed result = this._documents.get(did-1); 
         return result;
       }
     }
@@ -629,18 +629,17 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       IndexerInvertedOccurrence a = new IndexerInvertedOccurrence(options);
       //a.constructIndex();
       a.loadIndex();
-      a.getPostingList("zatanna");
-      /*
-      QueryPhrase q11 = new QueryPhrase("which");
-      //QueryPhrase q12 = new QueryPhrase("\"new york city\" film");
+      //a.getPostingList("zatanna");
+      
+      //QueryPhrase q11 = new QueryPhrase("which");
+      QueryPhrase q12 = new QueryPhrase("\"zatanna zatara\" Catwoman imprison");
       //QueryPhrase q13 = new QueryPhrase("\"kickass kicktin\"");
-      DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
-      System.out.println(d11._docid);
-      //DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
-      //System.out.println(d12._docid);
+      //DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
+      //System.out.println(d11._docid);
+      DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
+      System.out.println(d12.getTitle());
       //DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
       //System.out.println(d13._docid);
-      */
       /*
       QueryPhrase q11 = new QueryPhrase("kicktin");
       DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
