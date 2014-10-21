@@ -9,4 +9,4 @@ $ java -cp src:lib/org.apache.commons.io.jar -Xmx512m edu.nyu.cs.cs2580.SearchEn
 
 Search example:
 $ curl "http://localhost:25816/search?query=zatanna&ranker=CONJUNCTIVE&format=text"
-$ curl "http://localhost:25816/search?query=imprison%22zatanna+zatara%22+catwoman&ranker=CONJUNCTIVE&format=text"
+$ curl "http://localhost:25816/search?query=imprison+%22zatanna+zatara%22+catwoman&ranker=CONJUNCTIVE&format=text"

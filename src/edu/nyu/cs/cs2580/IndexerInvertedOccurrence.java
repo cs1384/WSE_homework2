@@ -356,7 +356,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   @Override
   public Document getDoc(int docid) {
     return (docid > _documents.size() || docid <= 0) ? 
-        null : _documents.get(docid);
+        null : _documents.get(docid-1);
   }
 
   /**
