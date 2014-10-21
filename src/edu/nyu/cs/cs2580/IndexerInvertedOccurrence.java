@@ -118,7 +118,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     {
         e.printStackTrace();;
     }
-    makeIndex();
+    //makeIndex();
     
     System.out.println(
         "Indexed " + Integer.toString(_numDocs) + " docs with "
@@ -236,15 +236,28 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     try{
       int indexId = 0;
       BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
-      //BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_Wiki.txt")));
       BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+indexId+".txt")));
       String line = br.readLine();
       int lineN = 1;
       int fre, op, j;
       while(line!=null){
-        this._uniqueTerms++;
         bw.write(line);
         bw.write("\n");
+        if(lineN%10000==0){
+          indexId++;
+          bw.close();
+          bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+indexId+".txt")));
+        }
+        lineN++;
+        line = br.readLine();
+      }
+      bw.close();
+      br.close();
+      br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
+      line = br.readLine();
+      lineN = 1;
+      while(line!=null){
+        this._uniqueTerms++;
         
         StringTokenizer st = new StringTokenizer(line);
         String term = st.nextToken();
@@ -258,16 +271,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
           }
         }
         _index.put(term,new Record(lineN,fre));
-        if(lineN%10000==0){
-          indexId++;
-          bw.close();
-          bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+indexId+".txt")));
-        }
         lineN++;
-        line = br.readLine();
       }
       br.close();
-      bw.close();
     }catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -343,8 +349,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         (IndexerInvertedOccurrence) reader.readObject();
 
     this._documents = loaded._documents;
-    //makeIndex();
     this._index = loaded._index;
+    makeIndex();
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
     this._totalTermFrequency = 0;
