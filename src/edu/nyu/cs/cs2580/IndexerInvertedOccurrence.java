@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.Vector;
 
@@ -238,19 +239,23 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+indexId+".txt")));
       String line = br.readLine();
       int lineN = 1;
-      int fre, i, op;
+      int fre, op, j;
       while(line!=null){
         this._uniqueTerms++;
         bw.write(line);
         bw.write("\n");
-        String[] list = line.split(" ");
+        StringTokenizer st = new StringTokenizer(line);
+        String term = st.nextToken();
         fre = 0;
-        for(i=2;i<list.length;){
-          op = Integer.parseInt(list[i]);
+        while(st.hasMoreTokens()){
+          st.nextToken(); //docid
+          op = Integer.parseInt(st.nextToken()); //occurance
           fre += op;
-          i = i + op + 2;
+          for(j=0;j<op;j++){
+            st.nextToken();
+          }
         }
-        _index.put(list[0],new Record(lineN,fre));
+        _index.put(term,new Record(lineN,fre));
         if(lineN%10000==0){
           indexId++;
           bw.close();
@@ -560,18 +565,31 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         File file = new File(_options._indexPrefix + "/Occurance_Index_"+fileN+".txt");
         String line = FileUtils.readLines(file).get(lineN-1).toString();
         //System.out.println(line);
-        String[] tokens = line.split("\\s+");
-        int i,top,offsetN;
-        for(i = 1;i<tokens.length;){
-          Posting posting = new Posting(Integer.parseInt(tokens[i++]));
-          offsetN = Integer.parseInt(tokens[i++]);
-          posting.offsets = new Vector<Integer>(offsetN);
-          top = i+offsetN;
-          while(i<top){
-            posting.offsets.add(Integer.parseInt(tokens[i++]));
+        StringTokenizer st = new StringTokenizer(line); 
+        int i,offsetN;
+        st.nextToken(); //term
+        while(st.hasMoreTokens()){
+          Posting posting = new Posting(Integer.parseInt(st.nextToken()));
+          offsetN = Integer.parseInt(st.nextToken());
+          for(i=0;i<offsetN;i++){
+            posting.offsets.add(Integer.parseInt(st.nextToken()));
           }
           result.add(posting);
         }
+        /*
+        for(i = 1;i<tokenN;){
+          Posting posting = new Posting(Integer.parseInt(st.nextToken()));
+          i++;
+          offsetN = Integer.parseInt(st.nextToken());
+          i++;
+          posting.offsets = new Vector<Integer>(offsetN);
+          top = i+offsetN;
+          while(i<top){
+            posting.offsets.add(Integer.parseInt(st.nextToken()));
+          }
+          result.add(posting);
+        }
+        */
       } catch (FileNotFoundException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
