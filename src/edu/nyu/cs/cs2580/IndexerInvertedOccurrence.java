@@ -272,6 +272,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         }
         _index.put(term,new Record(lineN,fre));
         lineN++;
+        line = br.readLine();
       }
       br.close();
     }catch (IOException e) {
@@ -648,7 +649,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       Options options = new Options("conf/engine.conf");
       IndexerInvertedOccurrence a = new IndexerInvertedOccurrence(options);
       a.constructIndex();
-      //a.loadIndex();
+      a.loadIndex();
       //a.getPostingList("zatanna");
       
       //QueryPhrase q11 = new QueryPhrase("which");
