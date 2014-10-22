@@ -18,14 +18,14 @@ public class Query {
   public Vector<String> _tokens = new Vector<String>();
   private Stemmer stemmer = new Stemmer();
   public Query(String query) {
-    _query = query;
+    _query = query;   
   }
 
   public void processQuery() {
-    if (_query == null) {
+    if (_query == null || _tokens.size()>0) {
       return;
     }
-    Scanner s = new Scanner(_query);
+    Scanner s = new Scanner(_query).useDelimiter("\\+");
     while (s.hasNext()) 
     {
         String token = s.next();
@@ -34,5 +34,11 @@ public class Query {
         _tokens.add(token);
     }
     s.close();
+  }
+  
+  public static void main(String[] args){
+    Query a = new Query("zatanna+group");
+    a.processQuery();
+    System.out.println(a._tokens);
   }
 }

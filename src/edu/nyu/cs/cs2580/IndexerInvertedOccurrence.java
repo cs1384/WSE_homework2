@@ -209,7 +209,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
     try{
       Set<String> keys = _op.keySet();     
-      System.out.println("Writing file...");
       BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/index_" + batch + ".txt")));
       StringBuilder sb = new StringBuilder();
       
@@ -235,18 +234,20 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   public void makeIndex(){
     try{
+      this._indexFileN = 0;
       BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
       BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+this._indexFileN+".txt")));
+      System.out.println("Writing /Occurance_Index_"+this._indexFileN+".txt");
       String line = br.readLine();
       int lineN = 1;
       while(line!=null){
-        System.out.println("Writing /Occurance_Index_"+this._indexFileN+".txt");
         bw.write(line);
         bw.write("\n");
         if(lineN%10000==0){
           this._indexFileN++;
           bw.close();
           bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+this._indexFileN+".txt")));
+          System.out.println("Writing /Occurance_Index_"+this._indexFileN+".txt");
         }
         lineN++;
         line = br.readLine();
@@ -257,12 +258,14 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+    File f = new File(_options._indexPrefix + "/Occurance_Index.txt");
+    f.delete();
   }
   
   public void buildIndex(){
     int lineN = 1;
     int i = 0;
-    while(i<this._indexFileN){
+    while(i<=this._indexFileN){
       lineN = readFile(i,lineN);
       i++;
     }
@@ -272,7 +275,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     Scanner sc;
     Scanner scl;
     try{
-      this.printRuntimeInfo("=======check========");
+      //this.printRuntimeInfo("=======check========");
       System.out.println("Scanning /Occurance_Index_"+i+".txt...");
       sc = new Scanner(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt"));
       //BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
@@ -405,11 +408,14 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
    * In HW2, you should be using {@link DocumentIndexed}.
    */
   public Document nextDoc(Query query, int docid) {
-    if(query instanceof QueryPhrase){
-      ((QueryPhrase)query).processQuery();
+    
+    if(query instanceof QueryPhrase){  
+      //System.out.println(((QueryPhrase)query)._tokens);
+      //System.out.println(((QueryPhrase)query)._phrases);
     }else{
-      query.processQuery();
+      //System.out.println(query._tokens);
     }
+    
     boolean keep = false;
     int did = docid;
     //keep getting document until no next available 
@@ -533,7 +539,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         return curDid+1;
       }
     }
-    //System.out.println("term" + curDid);
     int did = nextDocByTerm(terms.get(0), curDid);
     boolean returnable = true;
     int largestDid = did;
@@ -618,20 +623,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
           }
           result.add(posting);
         }
-        /*
-        for(i = 1;i<tokenN;){
-          Posting posting = new Posting(Integer.parseInt(st.nextToken()));
-          i++;
-          offsetN = Integer.parseInt(st.nextToken());
-          i++;
-          posting.offsets = new Vector<Integer>(offsetN);
-          top = i+offsetN;
-          while(i<top){
-            posting.offsets.add(Integer.parseInt(st.nextToken()));
-          }
-          result.add(posting);
-        }
-        */
       } catch (FileNotFoundException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();

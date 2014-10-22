@@ -95,9 +95,7 @@ public class RankerFavorite extends Ranker {
           + lambda
           * _indexer.corpusTermFrequency(str)
           /_indexer._totalTermFrequency);
-       
     }
-    
     score = Math.pow(10,score);
     return new ScoredDocument(doc, score);
   }

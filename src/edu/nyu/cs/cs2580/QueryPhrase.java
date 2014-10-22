@@ -33,6 +33,7 @@ public class QueryPhrase extends Query {
         e.printStackTrace();
         return;
     }
+    _tokens.clear();_phrases.clear();
     
     char[] chars = _query.trim().toCharArray(); 
     //System.out.println(_query);
