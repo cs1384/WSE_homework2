@@ -269,30 +269,35 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   }
   
   public int readFile(int i, int lineN){
+    Scanner sc;
+    Scanner scl;
     try{
       this.printRuntimeInfo("=======check========");
       System.out.println("Scanning /Occurance_Index_"+i+".txt...");
-      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
-      int fre, op, j;
-      String line = br.readLine();
-      while(line!=null){
-        this._uniqueTerms++;
-        StringTokenizer st = new StringTokenizer(line);
-        String term = st.nextToken();
+      sc = new Scanner(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt"));
+      //BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
+      sc.useDelimiter(System.getProperty("line.separator")); 
+      int j, top, fre;
+      while(sc.hasNext()){
         fre = 0;
-        while(st.hasMoreTokens()){
-          st.nextToken(); //docid
-          op = Integer.parseInt(st.nextToken()); //occurance
-          fre += op;
-          for(j=0;j<op;j++){
-            st.nextToken();
+        scl = new Scanner(sc.next());
+        String term = scl.next();
+        while(scl.hasNextInt()){
+          scl.nextInt();// docid
+          //System.out.println(sc.nextInt()); // docid
+          top = scl.nextInt();
+          //System.out.println(top);
+          fre += top;
+          for(j=0;j<top;j++){
+            scl.nextInt();
+            //System.out.println(sc.next());
           }
         }
+        scl.close();
         _index.put(term,new Record(lineN,fre));
         lineN++;
-        line = br.readLine();
       }
-      br.close();
+      sc.close();
     }catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
