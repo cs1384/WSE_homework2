@@ -264,8 +264,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     try{
       int i = 0;
       while(i<this._indexFileN){
-        if(i%13==0){
+        if(i%10==0){
           System.gc();
+          this.printRuntimeInfo("=======check========");
         }
         System.out.println("Scanning /Occurance_Index_"+i+".txt...");
         BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
@@ -286,8 +287,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
           }
           _index.put(term,new Record(lineN,fre));
           lineN++;
-          if(i==39);
-            System.out.println(term);
+          //System.out.println(term);
           line = br.readLine();
         }
         br.close();
@@ -665,12 +665,12 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     System.out.println();
     System.out.println(msg);
     System.out.println(new Date());
-    int mb = 1024*1024;
+    int mb = 1024;
     Runtime rt = Runtime.getRuntime();
     System.out.print(rt.freeMemory()/mb + ", ");
     System.out.print(rt.totalMemory()/mb + ", ");
     System.out.print(rt.maxMemory()/mb + ", ");
-    System.out.println("used " + (rt.totalMemory() - rt.freeMemory())/mb + "MB");
+    System.out.println("used " + (rt.totalMemory() - rt.freeMemory())/mb + "KB");
   }
   
   public static void main(String args[]){    
