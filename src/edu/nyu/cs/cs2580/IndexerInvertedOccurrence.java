@@ -292,7 +292,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }catch (OutOfMemoryError e){
-      System.out.println(lineN);
+      this.printRuntimeInfo("=======ouch!========");
     }
   }
   
