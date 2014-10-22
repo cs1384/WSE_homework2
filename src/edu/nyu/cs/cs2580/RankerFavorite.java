@@ -8,6 +8,8 @@ import java.util.Vector;
 import edu.nyu.cs.cs2580.QueryHandler.CgiArguments;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @CS2580: Implement this class for HW2 based on a refactoring of your favorite
@@ -22,6 +24,12 @@ public class RankerFavorite extends Ranker {
   public RankerFavorite(Options options,
       CgiArguments arguments, Indexer indexer) {
     super(options, arguments, indexer);
+    
+    if(!(indexer instanceof IndexerInvertedCompressedDisk))
+    {
+        System.out.println("Sorry, the favorite ranker can only work with 'Compressed Index'");
+        return;
+    }
     System.out.println("Using Ranker: " + this.getClass().getSimpleName());
   }
   
@@ -36,29 +44,55 @@ public class RankerFavorite extends Ranker {
   @Override
   public Vector<ScoredDocument> runQuery(Query query, int numResults)
     {
-        //System.out.println("SSS");
-        
         //Get documents which have this term
-        System.out.println("num docs = " + this._indexer._numDocs);
+        
         try
         {
             QueryPhrase qp = new QueryPhrase(query._query);
-            //Vector<Document> retrievedDocs = new Vector<Document>();
+            
+            
             Vector<ScoredDocument> retrievedDocs = new Vector<ScoredDocument>();
             
-            Document d = this._indexer.nextDoc(qp, 0);
-            while(d != null)
+            if(qp._tokens.size() > 0)
             {
-                //System.out.println("d = " + d._docid);
-                //System.out.println("found in " + d.getUrl());
-                
-                //ScoredDocument sd = new ScoredDocument(d, 1);
-                ScoredDocument sd = scoreDocument(qp, d._docid);
-                
-                retrievedDocs.add(sd);
-                d = this._indexer.nextDoc(qp, d._docid);
-                
+                Document d = this._indexer.nextDoc(qp, 0);
+                while(d != null)
+                {
+                    ScoredDocument sd = scoreDocument(qp, d._docid);
+
+                    retrievedDocs.add(sd);
+                    d = this._indexer.nextDoc(qp, d._docid);
+
+                }
             }
+            //System.out.println("Got token docs");
+            //retrieve phrases
+            Set<DocumentIndexed> finalSet = new HashSet<DocumentIndexed>();
+            for(int i=0;i<qp._phrases.size();i++)
+            {
+                try
+                {
+                    Vector<DocumentIndexed> vec = ((IndexerInvertedCompressedDisk) _indexer).allDocPhrase(qp._phrases.get(i));
+                    if(i > 0)
+                        finalSet.retainAll(vec);
+                    else
+                        finalSet.addAll(vec);
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                    System.out.println("Please use compressed index");
+                }
+            }
+            
+            for(DocumentIndexed d : finalSet)
+            {
+                ScoredDocument sd = scoreDocument(qp, d._docid);
+                retrievedDocs.add(sd);
+            }
+            
+            System.out.println("Got all docs");
+            
             
             Collections.sort(retrievedDocs, Collections.reverseOrder());
             
@@ -90,7 +124,7 @@ public class RankerFavorite extends Ranker {
       
       score += Math.log10(
           (1-lambda)
-          *_indexer.documentTermFrequency(str, doc.getUrl())
+          *freq
           / ((DocumentIndexed)doc).getSize() 
           + lambda
           * _indexer.corpusTermFrequency(str)

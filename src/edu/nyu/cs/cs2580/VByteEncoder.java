@@ -1,6 +1,11 @@
 package edu.nyu.cs.cs2580;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 public class VByteEncoder
 {
@@ -69,6 +74,38 @@ public class VByteEncoder
         array[sizeReq-1] = (byte)newLast;
         
         return array;
+        
+    }
+    
+    public static int encode(int n, byte[] array1)
+    {
+        int sizeReq = 1;
+        if(n < Math.pow(2, 7))
+            sizeReq = 1;
+        else if(n < Math.pow(2, 14))
+            sizeReq = 2;
+        else if(n < Math.pow(2, 21))
+            sizeReq = 3;
+        else if(n < Math.pow(2, 28))
+            sizeReq = 4;
+            
+        //ArrayList<Byte> array = new ArrayList<Byte>();
+        //byte array[] = new byte[sizeReq];
+        int i = sizeReq-1;
+        while(true)
+        {
+            int x = n % 128;
+            array1[i] = (byte)x;
+            if(n < 128)
+                break;
+            
+            n = n / 128;
+            i--;
+        }
+        byte newLast = (byte) ((byte)array1[sizeReq-1] | (byte)(1 << 7));
+        array1[sizeReq-1] = (byte)newLast;
+        
+        return sizeReq;
         
     }
     
@@ -141,15 +178,77 @@ public class VByteEncoder
         nums.add(10000);
         nums.add(200);
         
+        ArrayList<Integer> nums2 = new ArrayList<Integer>();
+        nums2.add(3);
+        nums2.add(4);
+        nums2.add(5);
+        
+        
         
         byte array[] = VByteEncoder.encode(nums);
+        byte array2[] = VByteEncoder.encode(nums2);
+        
+        System.out.println("Actual:");
         for(int i=0;i<array.length;i++)
         {
-            
             System.out.println(Integer.toHexString(array[i]));
         }
         
+        System.out.println("Actual2:");
+        for(int i=0;i<array2.length;i++)
+        {
+            System.out.println(Integer.toHexString(array2[i]));
+        }
         
+        
+        int lenToRead = array.length;
+        try
+        {
+            FileOutputStream output = new FileOutputStream(new File("testByteOut"));
+            IOUtils.write(array, output);
+            System.out.println("Wrote " + array.length + " bytes");
+            IOUtils.write(array2, output);
+            System.out.println("Wrote " + array2.length + " bytes");
+        }
+        catch(Exception e)
+        {
+        }
+        
+        try
+        {
+            byte newArray[];// = new byte[lenToRead];
+            FileInputStream input = new FileInputStream(new File("testByteOut"));
+            newArray = IOUtils.toByteArray(input, lenToRead);
+            
+            System.out.println("Read:");
+            for(int i=0;i<newArray.length;i++)
+            {
+                System.out.println(Integer.toHexString(newArray[i]));
+            }
+            System.out.println("");
+            
+            newArray = IOUtils.toByteArray(input);
+            System.out.println("Read again:");
+            for(int i=0;i<newArray.length;i++)
+            {
+                System.out.println(Integer.toHexString(newArray[i]));
+            }
+            System.out.println("");
+            
+        }
+        
+        catch(Exception e)
+        {
+        }
+        
+
+        /*
+        for(int i=0;i<array.length;i++)
+        {
+            System.out.println(Integer.toHexString(array[i]));
+        }
+
+            
         ArrayList<Integer> nums2 = decode(array);
         for(int i=0;i<nums2.size();i++)
         {
@@ -163,6 +262,9 @@ public class VByteEncoder
             if((b1 & (byte)(1 << 7)) != 0)
                 System.out.println("last");
         }
-        
+      */  
     }
+    
+    
+    
 }

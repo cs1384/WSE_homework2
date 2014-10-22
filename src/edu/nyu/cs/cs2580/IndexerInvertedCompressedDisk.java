@@ -640,7 +640,7 @@ public IndexerInvertedCompressedDisk(Options options)
         System.out.println(Integer.toString(_numDocs) + " documents loaded " + "with " + Long.toString(_totalTermFrequency) + " terms!");
         
         //printIndex();
-        
+        /*
         //int x = next_pos("abc", 1, 0);
         //System.out.println("x = " + x);
         Vector<String> phrase = new Vector<String>();
@@ -653,6 +653,7 @@ public IndexerInvertedCompressedDisk(Options options)
         {
             System.out.println("d = " + d._docid);
         }
+        */
     }
     
 
@@ -736,7 +737,7 @@ public IndexerInvertedCompressedDisk(Options options)
         Pair pl[] = skipList.get(wordIndex);
         if(pl == null)
         {
-            System.out.println("Error!");
+            System.out.println("Unexpected Error!");
             return Integer.MAX_VALUE;
         }
         
@@ -797,6 +798,160 @@ public IndexerInvertedCompressedDisk(Options options)
     }
     
     
+
+    //This tells us which byte number the do starts from, for faster lookup
+    private int next_pos(String w, int docId, int pos, int byteOffset)
+    {
+        docId -= 1; //need to do this so we can use legacy code
+        if(!posMap.containsKey(w))
+            return Integer.MAX_VALUE;
+        
+        int wordIndex = posMap.get(w);
+        
+        //System.out.println("word: " + w + ",  at index:" + wordIndex);
+        //System.out.println("next: " + w + ", " + docId);
+        //Scan skip list to find this doc
+        
+        Pair pl[] = skipList.get(wordIndex);
+        if(pl == null)
+        {
+            System.out.println("Unexpected Error!");
+            return Integer.MAX_VALUE;
+        }
+        
+        //System.out.println("pl.size() = " + pl.length);
+        int prev = 0;
+        int offset = 0;
+        for(Pair p : pl)
+        {
+            prev = offset;
+            offset = p.p;
+            
+            if(p.d >= docId)
+                break;
+
+        }
+        
+        
+        offset = prev;
+        
+        byte bList[] = _index.get(wordIndex);
+
+        int i = 0;
+        //Integer nextLoc = byteOffset;
+        Integer nextLoc = offset;
+        boolean found = false;
+        while(i < bList.length)
+        {
+            //System.out.println("i = " + i);
+            int x[] = VByteEncoder.getFirstNum(bList, nextLoc);
+            int doc = x[0];
+            nextLoc = x[1];
+            
+            if(doc == docId+1)
+            {
+                
+                found = true;
+            }
+            //System.out.println("doc = " + doc);
+            x = VByteEncoder.getFirstNum(bList, nextLoc);
+            int numOccur = x[0];
+            //System.out.println("numOccur = " + numOccur);
+            
+            nextLoc = x[1];
+            
+            //System.out.println("nextLoc = " + nextLoc);
+            
+            int total = 0;
+            for(int j=0;j<numOccur;j++)
+            {
+                x = VByteEncoder.getFirstNum(bList, nextLoc);
+                int offsetX = x[0];
+                //System.out.println("offsetX = " + offsetX);
+                total += offsetX;
+                
+                if(found && total > pos)
+                    return total;
+                
+                nextLoc = x[1];
+            }
+            
+            //next doc's offset:
+            i = nextLoc; //1 because of numOffsets
+
+        }
+        
+        //now do a linear search to find the doc after docId
+        return Integer.MAX_VALUE;
+    }
+    
+    
+    private int findDoc(String w, int docId)
+    {
+        if(!posMap.containsKey(w))
+            return Integer.MAX_VALUE;
+        
+        int wordIndex = posMap.get(w);
+
+        //Scan skip list to find this doc
+        Pair pl[] = skipList.get(wordIndex);
+        if(pl == null)
+            System.out.println("DSDS");
+        
+        //System.out.println("pl.size() = " + pl.length);
+        int prev = 0;
+        int offset = 0;
+        for(Pair p : pl)
+        {
+            prev = offset;
+            offset = p.p;
+            
+            if(p.d >= docId)
+                break;
+
+        }
+        
+        
+        offset = prev;
+        byte bList[] = _index.get(wordIndex);
+
+        int i = 0;
+        Integer nextLoc = offset;
+        boolean found = false;
+        while(i < bList.length)
+        {
+            int x[] = VByteEncoder.getFirstNum(bList, nextLoc);
+            int doc = x[0];
+            
+            if(doc >= docId)
+                return nextLoc;
+            
+            nextLoc = x[1];
+            
+            if(doc > docId)
+                found = true;
+
+            x = VByteEncoder.getFirstNum(bList, nextLoc);
+            int numOccur = x[0];
+            nextLoc = x[1];
+            
+            for(int j=0;j<numOccur;j++)
+            {
+                x = VByteEncoder.getFirstNum(bList, nextLoc);
+                nextLoc = x[1];
+            }
+            
+            //next doc's offset:
+            i = nextLoc; //1 because of numOffsets
+
+        }
+        
+        //now do a linear search to find the doc after docId
+        return Integer.MAX_VALUE;
+    }
+    
+    
+    
     @Override
     public Document getDoc(int docid)
     {
@@ -806,7 +961,7 @@ public IndexerInvertedCompressedDisk(Options options)
     }
 
     @Override
-    public DocumentIndexed nextDoc(QueryPhrase query, int docid)
+    public DocumentIndexed nextDoc(Query query, int docid)
     {
         Vector<String> queryVec = query._tokens;
 
@@ -869,10 +1024,11 @@ public IndexerInvertedCompressedDisk(Options options)
         
         //first, get posting list sizes for each term, and look at docs in the smalles list
         int min = Integer.MAX_VALUE;
-        String minTerm ;
+        String minTerm = "";
         int minIndex = 0;
         for(int i=0;i<phrase.size();i++)
         {
+            //System.out.println("word = " + phrase.get(i));
             String w = phrase.get(i);
             //System.out.println("w = " + w);
             if(!posMap.containsKey(w))
@@ -904,10 +1060,12 @@ public IndexerInvertedCompressedDisk(Options options)
         for(Integer doc : docsForMinTerm)
         {
             //System.out.println("doc = " + doc);
-            int x = nextDocPhrase(phrase, doc, 0);
+            int docByte = findDoc(minTerm, doc);
+            int x = nextDocPhrase(phrase, doc, 0, docByte);
             if(x != Integer.MAX_VALUE)
             {
                 results.add(_documents.get(doc-1));
+                //System.out.println("return " + (doc-1));
             }
         }
         return results;
@@ -915,13 +1073,13 @@ public IndexerInvertedCompressedDisk(Options options)
     /*
         
     */
-    public int nextDocPhrase(Vector<String> phrase, int docid, int posBefore)
+    public int nextDocPhrase(Vector<String> phrase, int docid, int posBefore, int docByte)
     {
         ArrayList<Integer> pos = new ArrayList<Integer>();
         
         for(int i=0;i<phrase.size();i++)
         {
-            int n = next_pos(phrase.get(i), docid, posBefore);
+            int n = next_pos(phrase.get(i), docid, posBefore, docByte);
             
             //System.out.println("phrase = " + phrase.get(i) + "    got n = " + n + "  ,  for docid = " + docid);
             if(n == Integer.MAX_VALUE)
@@ -953,14 +1111,14 @@ public IndexerInvertedCompressedDisk(Options options)
             int min = Integer.MAX_VALUE;
             for(int i=0;i<phrase.size();i++)
             {
-                //if(pos.get(i) > max)
-                //    max = pos.get(i);
+                if(pos.get(i) > max)
+                    max = pos.get(i);
                 if(pos.get(i) < min)
                     min = pos.get(i);
             }
             //System.out.println("min = " + min + " for doc id = " + docid);
             //return nextDocPhrase(phrase, docid, max-1);
-            return nextDocPhrase(phrase, docid, min);
+            return nextDocPhrase(phrase, docid, min, docByte);
         }
         
         /*
