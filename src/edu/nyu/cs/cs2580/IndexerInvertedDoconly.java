@@ -469,7 +469,7 @@ private void constructPartialIndex(List<File> listOfFiles){
    */
 
   @Override
-  public Document nextDoc(QueryPhrase query, int docid) {
+  public Document nextDoc(Query query, int docid) {
       Vector<String> words = query._tokens;
       int length = words.size();
       Vector<Integer> newidlist = new Vector<Integer>();
