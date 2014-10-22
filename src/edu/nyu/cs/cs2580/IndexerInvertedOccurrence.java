@@ -260,13 +260,10 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   }
   
   public void buildIndex(){
+    int lineN = 1;
     try{
       int i = 0;
-      int lineN = 1;
       while(i<this._indexFileN){
-        if(i%10==0){
-          System.gc();
-        }
         System.out.println("Scanning /Occurance_Index_"+i+".txt...");
         BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
         int fre, op, j;
@@ -294,6 +291,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     }catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
+    }catch (OutOfMemoryError e){
+      System.out.println(lineN);
     }
   }
   
