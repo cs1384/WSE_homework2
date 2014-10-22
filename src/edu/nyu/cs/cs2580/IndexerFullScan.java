@@ -203,7 +203,7 @@ class IndexerFullScan extends Indexer implements Serializable {
   }
 
   @Override
-  public Document nextDoc(QueryPhrase query, int docid) {
+  public Document nextDoc(Query query, int docid) {
     SearchEngine.Check(false, "Not implemented!");
     return null;
   }

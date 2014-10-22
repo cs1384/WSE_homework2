@@ -16,6 +16,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.Vector;
 
@@ -53,15 +55,14 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   }
   private Map<String, Vector<Posting>> _op = 
       new TreeMap<String, Vector<Posting>>();
-  //Frequency of each term in entire corpus, optional
-  //private Map<Integer, Integer> _termCorpusFrequency = 
-  //    new HashMap<Integer, Integer>();
-  //map url to docid to support documentTermFrequency method,optional 
-  private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
   
+  //map url to docid to support documentTermFrequency method,optional 
+  //private Map<String, Integer> _urlToDoc = new HashMap<String, Integer>(); 
+  
+  private short _indexFileN = 0;
   //to store and quick access to basic document information such as title 
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
-  //private int _uniqueTerms = 0;
+  private int _uniqueTerms = 0;
   
   //Provided for serialization
   public IndexerInvertedOccurrence() { }
@@ -74,17 +75,10 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   @Override
   public void constructIndex() throws IOException
   {
-    printRuntimeInfo("======= GO WSE_homework2!! =======");
+    printRuntimeInfo("======= Constructing =======");
     
-    File f1 = new File(_options._indexPrefix + "/index0.txt");
-    File f2 = new File(_options._indexPrefix + "/index1.txt");
-    File f3 = new File(_options._indexPrefix + "/index2.txt");
-    f1.createNewFile();
-    f2.createNewFile();
-    f3.createNewFile();
-    
-    try
-    {
+    int batch = 0;
+    try{
       String corpusFolder = _options._corpusPrefix + "/";
       System.out.println("Construct index from: " + corpusFolder);
       File folder = new File(corpusFolder);
@@ -93,31 +87,43 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         fileList.add(file);
       }
       
-      int lower=0, upper = 200;
-      int takeTurn = 0;
+      int lower=0, upper = 250;
       while(lower < fileList.size()){
-        System.out.println("range:  low = " + lower + " , upper = " + upper);
+        //System.out.println("range:  low = " + lower + " , upper = " + upper);
         if(upper > fileList.size()){
           upper = fileList.size();
         }
-        constructPartialIndex(fileList.subList(lower, upper));
-        writeToIndexFile(takeTurn);
-        mergeFiles(takeTurn); //merge previous output files
+        constructPartialIndex(fileList.subList(lower, upper),batch++);
         _op.clear();
         lower = upper;
-        upper += 200;
-        takeTurn = takeTurn + 2;
+        upper += 250;
       } 
-      finalConstruction(takeTurn);
-      
+      //finalConstruction(batch);
     }catch (Exception e){
         e.printStackTrace();
     }
     
+    printRuntimeInfo("======= Merge =======");
+    
+    try{
+      File f = new File(_options._indexPrefix + "/merged_0.txt");
+      f.createNewFile();            
+      for(int i=0;i<batch;i++){
+        mergeIndices(i) ;
+        //System.out.println("Merged " + (i+1) + " / " + batch);
+      }
+      f = new File(_options._indexPrefix + "/merged_"+batch+".txt");
+      f.renameTo(new File(_options._indexPrefix + "/Occurance_Index.txt"));
+    }
+    catch(Exception e)
+    {
+        e.printStackTrace();;
+    }
+    makeIndex();
+    
     System.out.println(
         "Indexed " + Integer.toString(_numDocs) + " docs with "
         + Long.toString(_totalTermFrequency) + " terms.");
-    //System.out.println(_uniqueTerms);
 
     String indexFile = _options._indexPrefix + "/OccuranceIndexer.idx";
     System.out.println("Store index to: " + indexFile);
@@ -129,169 +135,178 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     printRuntimeInfo("======== END!! ========");
   }
   
-  private void constructPartialIndex(List<File> listOfFiles){
-    //Map<String, Vector<Integer>> _opTemp = new HashMap<String, Vector<Integer>>();
+  public void mergeIndices(int id){
+    System.out.println("Merging file " + id);
     try{
-      int count = 0;
-      for (File file : listOfFiles){
-        //System.out.println(file.getName());
-        String text = TestParse2.getPlainText(file);
-        processDocument(text,file.getName()); //process each webpage
-        count++; 
-        if(count % 200 == 0){
-          printRuntimeInfo("====== 200 files =======");
+      BufferedReader br1 = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/index_" + id + ".txt")));
+      BufferedReader br2 = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/merged_" + id + ".txt")));
+      BufferedWriter outBw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/merged_" + (id+1) + ".txt")));
+          
+      //now walk the files, and write to a new file
+      //int i=1, j=1;
+      String file1Line = br1.readLine();
+      String file2Line = br2.readLine();
+      while(file1Line != null && file2Line != null){
+        String tokens1[] = file1Line.split(" ");
+        String tokens2[] = file2Line.split(" ");
+
+        if(tokens1[0].compareTo(tokens2[0]) < 0){
+          outBw.write(file1Line + "\n");
+          file1Line = br1.readLine();
+          //i++;
+        }else if(tokens1[0].compareTo(tokens2[0]) > 0){
+          outBw.write(file2Line + "\n");
+          file2Line = br2.readLine();
+          //j++;
+        }else{
+          StringBuilder sb = new StringBuilder();
+          sb.append(file2Line);
+          for(int k=1;k<tokens1.length;k++){
+            sb.append(" ").append(tokens1[k]);
+          }
+          sb.append("\n");
+          outBw.write(sb.toString());
+          file1Line = br1.readLine();
+          file2Line = br2.readLine();
         }
+      }
+
+      while(file1Line != null){
+        outBw.write(file1Line + "\n");
+        file1Line = br1.readLine();
+      }
+      while(file2Line != null){
+        outBw.write(file2Line + "\n");
+        file2Line = br2.readLine();
+        //j++;                
+      }
+      outBw.close();
+      br1.close();
+      br2.close();
+        
+      //delete
+      File f1 = new File(_options._indexPrefix + "/index_" + id + ".txt");
+      File f2 = new File(_options._indexPrefix + "/merged_" + id + ".txt");
+      
+      f1.delete();
+      f2.delete();
+    }catch(Exception e){
+          e.printStackTrace();
+    }
+  }
+  
+  
+  private void constructPartialIndex(List<File> listOfFiles, int batch){
+    try{
+      for (File file : listOfFiles){
+        String text = TestParse2.getPlainText(file);
+        String title = file.getName();
+        processDocument(text, title);
       }
     }catch(Exception e){
       e.printStackTrace();
     }
 
-    System.out.println("Partially Indexed " + Integer.toString(_numDocs) + " docs with " + Long.toString(_totalTermFrequency) + " terms.");
-
-  }
-  
-  public void writeToIndexFile(int takeTurn){
-    BufferedWriter bw = null;
-    try {
-      bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/index" + takeTurn%3 + ".txt")));
-      Vector<Posting> pv;
-      StringBuilder sb = new StringBuilder(); 
-      for(String term : _op.keySet()){
-        sb.append(term);
-        pv = _op.get(term);
-        for(Posting p : pv)
-        {
-          sb.append(" ").append(p.did);
-          sb.append(" ").append(p.offsets.size());
-          for(Integer offset : p.offsets){
-            sb.append(" ").append(offset);
+    try{
+      Set<String> keys = _op.keySet();     
+      BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/index_" + batch + ".txt")));
+      StringBuilder sb = new StringBuilder();
+      
+      for(String term : keys){
+        Vector<Posting> pv = _op.get(term);
+        sb.append(term).append(" ");
+        for(Posting p : pv){
+          sb.append(p.did).append(" ");
+          sb.append(p.offsets.size()).append(" ");
+          for(Integer o : p.offsets){
+            sb.append(o).append(" ");
           }
         }
-        //System.out.println(sb.toString());
         sb.append("\n");
       }
       bw.write(sb.toString());
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } finally{
-      try {
-        bw.close();
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-    }
-  }
-  
-  public void mergeFiles(int takeTurn){
-    
-    try {
-      int merge = takeTurn%3 - 1==-1?2:takeTurn%3 - 1;
-      int target = takeTurn%3 + 1==3?0:takeTurn%3 + 1;
-      
-      //System.out.println(merge);
-      //System.out.println(takeTurn%3);
-      //System.out.println(target);
-      
-      BufferedReader br1 = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/index" + takeTurn%3 + ".txt")));
-      BufferedReader br2 = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/index" + merge + ".txt")));
-      BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/index" + target + ".txt")));
-      
-      String line1 = br1.readLine();
-      String line2 = br2.readLine();
-      
-      while(line1 != null && line2 != null){
-        String tokens1[] = line1.split(" ");
-        String tokens2[] = line2.split(" ");
-        if(tokens1[0].compareTo(tokens2[0]) < 0){
-          if(tokens1[0].equals("kicktin"))
-            //System.out.println("kicktin1");
-          bw.write(line2 + "\n");
-          line2 = br2.readLine();
-        }else if(tokens1[0].compareTo(tokens2[0]) > 0){
-          if(tokens2[0].equals("kicktin"))
-            //System.out.println("kicktin2");
-          bw.write(line1 + "\n");
-          line1 = br1.readLine();
-        }else{
-          StringBuilder sb = new StringBuilder();
-          sb.append(line2);
-          for(int k=1;k<tokens1.length;k++){
-            sb.append(" ").append(tokens1[k]);
-          }
-          line1 = br1.readLine();
-          line2 = br2.readLine();
-        }
-      }
-      
-      while(line1 != null){
-        bw.write(line1 + "\n");
-        line1 = br1.readLine();
-      }
-      
-      while(line2 != null){
-        bw.write(line2 + "\n");
-        line2 = br2.readLine();
-      }
-      
       bw.close();
-      br1.close();
-      br2.close();
-    } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      System.out.println("Partially Indexed " + Integer.toString(_numDocs) + " docs with " + Long.toString(_totalTermFrequency) + " terms.");
+    }catch(Exception e){
+      e.printStackTrace();;
     }
   }
-  
-  public void finalConstruction(int takeTurn){
-    try{
-      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/index" + takeTurn%3 + ".txt")));
-      BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_index.txt")));
-      String line = br.readLine();
-      while(line!=null){
-        bw.write(line + "\n");
-        line = br.readLine();
-      }
-    }catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-    /*
-    File f1 = new File(_options._indexPrefix + "/index0.txt");
-    File f2 = new File(_options._indexPrefix + "/index1.txt");
-    File f3 = new File(_options._indexPrefix + "/index2.txt");
-    f1.delete();
-    f2.delete();
-    f3.delete();
-    */
-  }
-  
+
   public void makeIndex(){
     try{
-      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_index.txt")));
+      this._indexFileN = 0;
+      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index.txt")));
+      BufferedWriter bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+this._indexFileN+".txt")));
+      System.out.println("Writing /Occurance_Index_"+this._indexFileN+".txt");
       String line = br.readLine();
       int lineN = 1;
-      int fre, i, op;
       while(line!=null){
-        String[] list = line.split(" ");
-        fre = 0;
-        for(i=2;i<list.length;){
-          op = Integer.parseInt(list[i]);
-          fre += op;
-          i = i + op + 2;
+        bw.write(line);
+        bw.write("\n");
+        if(lineN%10000==0){
+          this._indexFileN++;
+          bw.close();
+          bw = new BufferedWriter(new FileWriter(new File(_options._indexPrefix + "/Occurance_Index_"+this._indexFileN+".txt")));
+          System.out.println("Writing /Occurance_Index_"+this._indexFileN+".txt");
         }
-        _index.put(list[0],new Record(lineN,fre));
         lineN++;
         line = br.readLine();
       }
+      bw.close();
+      br.close();
     }catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+    File f = new File(_options._indexPrefix + "/Occurance_Index.txt");
+    f.delete();
+  }
+  
+  public void buildIndex(){
+    int lineN = 1;
+    int i = 0;
+    while(i<=this._indexFileN){
+      lineN = readFile(i,lineN);
+      i++;
+    }
+  }
+  
+  public int readFile(int i, int lineN){
+    Scanner sc;
+    Scanner scl;
+    try{
+      //this.printRuntimeInfo("=======check========");
+      System.out.println("Scanning /Occurance_Index_"+i+".txt...");
+      sc = new Scanner(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt"));
+      //BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
+      sc.useDelimiter(System.getProperty("line.separator")); 
+      int j, top, fre;
+      while(sc.hasNext()){
+        fre = 0;
+        scl = new Scanner(sc.next());
+        String term = scl.next();
+        while(scl.hasNextInt()){
+          scl.nextInt();// docid
+          //System.out.println(sc.nextInt()); // docid
+          top = scl.nextInt();
+          //System.out.println(top);
+          fre += top;
+          for(j=0;j<top;j++){
+            scl.nextInt();
+            //System.out.println(sc.next());
+          }
+        }
+        scl.close();
+        _index.put(term,new Record(lineN,fre));
+        lineN++;
+      }
+      sc.close();
+    }catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    System.gc();
+    return lineN;
   }
   
   public void processDocument(String content, String filename){
@@ -307,7 +322,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     String url = "en.wikipedia.org/wiki/" + filename;
     doc.setUrl(url);
     //build up urlToDoc map
-    _urlToDoc.put(filename, doc._docid);
+    //_urlToDoc.put(filename, doc._docid);
     _documents.add(doc);
     _numDocs++;
     return;
@@ -315,12 +330,16 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   public int ProcessTerms(String content, int docid){
     
+    Stemmer stemmer = new Stemmer();
     int offset = 1; //offset starts from 1
     Scanner s = new Scanner(content);
-    String token;
     while (s.hasNext()) {
-      //put offsets into op map
-      token = s.next();
+      String token = s.next();
+      
+      stemmer.add(token.toCharArray(), token.length());
+      stemmer.stem();
+      token = stemmer.toString().toLowerCase();
+            
       if(_op.containsKey(token)){
         if(_op.get(token).lastElement().did==docid){
           _op.get(token).lastElement().offsets.add(offset);
@@ -349,6 +368,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
+    this.printRuntimeInfo("======== Loading =========");
     String indexFile = _options._indexPrefix + "/OccuranceIndexer.idx";
     System.out.println("Load index from: " + indexFile);
 
@@ -358,7 +378,10 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         (IndexerInvertedOccurrence) reader.readObject();
 
     this._documents = loaded._documents;
-    makeIndex();
+    this._index = loaded._index;
+    this._indexFileN = loaded._indexFileN;
+    System.out.println(this._indexFileN);
+    buildIndex();
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
     this._totalTermFrequency = 0;
@@ -367,9 +390,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     }
    
     this._op = loaded._op;
-    this._urlToDoc = loaded._urlToDoc;
+    //this._urlToDoc = loaded._urlToDoc;
     reader.close();
-    
+    this.printRuntimeInfo("======== Done =========");
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
         "with " + Long.toString(_totalTermFrequency) + " terms!");
     
@@ -378,31 +401,41 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   @Override
   public Document getDoc(int docid) {
     return (docid > _documents.size() || docid <= 0) ? 
-        null : _documents.get(docid);
+        null : _documents.get(docid-1);
   }
 
   /**
    * In HW2, you should be using {@link DocumentIndexed}.
    */
-  public Document nextDoc(QueryPhrase query, int docid) {
+  public Document nextDoc(Query query, int docid) {
+    
+    if(query instanceof QueryPhrase){  
+      //System.out.println(((QueryPhrase)query)._tokens);
+      //System.out.println(((QueryPhrase)query)._phrases);
+    }else{
+      //System.out.println(query._tokens);
+    }
+    
     boolean keep = false;
     int did = docid;
     //keep getting document until no next available 
     while((did = nextDocByTerms(query._tokens,did))!=Integer.MAX_VALUE){
       keep = false;
       //check if the resulting doc contains all phrases 
-      for(Vector<String> phrase : query._phrases){
-        //if not, break the for loop and get next doc base on tokens
-        if(nextPositionByPhrase(phrase,did,-1)==Integer.MAX_VALUE){
-          keep = true;
-          break;
+      if(query instanceof QueryPhrase){
+        for(Vector<String> phrase : ((QueryPhrase)query)._phrases){
+          //if not, break the for loop and get next doc base on tokens
+          if(nextPositionByPhrase(phrase,did,-1)==Integer.MAX_VALUE){
+            keep = true;
+            break;
+          }
         }
       }
       if(keep){
         continue;
       }else{
         //create return object if passed all phrase test and return
-        DocumentIndexed result = new DocumentIndexed(did);
+        DocumentIndexed result = this._documents.get(did-1); 
         return result;
       }
     }
@@ -506,7 +539,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         return curDid+1;
       }
     }
-    //System.out.println("term" + curDid);
     int did = nextDocByTerm(terms.get(0), curDid);
     boolean returnable = true;
     int largestDid = did;
@@ -575,18 +607,19 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       int lineN = _index.get(term).lineN;
       //System.out.println("lineN:" + lineN);
       try {
-        File file = new File(_options._indexPrefix + "/Occurance_index.txt");
+        int fileN = lineN/10001;
+        lineN = lineN%10000;
+        File file = new File(_options._indexPrefix + "/Occurance_Index_"+fileN+".txt");
         String line = FileUtils.readLines(file).get(lineN-1).toString();
-        //System.out.println("line:" + line);
-        String[] tokens = line.split(" ");
-        int i,top,offsetN;
-        for(i = 1;i<tokens.length;){
-          Posting posting = new Posting(Integer.parseInt(tokens[i++]));
-          offsetN = Integer.parseInt(tokens[i++]);
-          posting.offsets = new Vector<Integer>(offsetN);
-          top = i+offsetN;
-          while(i<top){
-            posting.offsets.add(Integer.parseInt(tokens[i++]));
+        //System.out.println(line);
+        StringTokenizer st = new StringTokenizer(line); 
+        int i,offsetN;
+        st.nextToken(); //term
+        while(st.hasMoreTokens()){
+          Posting posting = new Posting(Integer.parseInt(st.nextToken()));
+          offsetN = Integer.parseInt(st.nextToken());
+          for(i=0;i<offsetN;i++){
+            posting.offsets.add(Integer.parseInt(st.nextToken()));
           }
           result.add(posting);
         }
@@ -613,17 +646,10 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   @Override
   public int documentTermFrequency(String term, String url) {
-    
-    String[] temp = url.split("/");
-    String key = temp[temp.length-1];
-    if(_urlToDoc.containsKey(key)){
-      int did = _urlToDoc.get(key);
-      QueryPhrase query = new QueryPhrase(term);
-      DocumentIndexed di = (DocumentIndexed)nextDoc(query,did-1);
-      if(di!=null){
-        return di.getOccurance();
-      }else{
-        return 0;
+    Vector<Posting> op = this.getPostingList(term);
+    for(int i=0;i<op.size();i++){
+      if(_documents.get(op.get(i).did-1).getUrl().equals(url)){
+        return op.get(i).offsets.size();
       }
     }
     return 0;
@@ -633,43 +659,33 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     System.out.println();
     System.out.println(msg);
     System.out.println(new Date());
-    int mb = 1024*1024;
+    int mb = 1024;
     Runtime rt = Runtime.getRuntime();
-    System.out.println(rt.freeMemory()/mb);
-    System.out.println(rt.totalMemory()/mb);
-    System.out.println(rt.maxMemory()/mb);
-    System.out.println("used " + (rt.totalMemory() - rt.freeMemory())/mb + "MB");
+    System.out.print(rt.freeMemory()/mb + ", ");
+    System.out.print(rt.totalMemory()/mb + ", ");
+    System.out.print(rt.maxMemory()/mb + ", ");
+    System.out.println("used " + (rt.totalMemory() - rt.freeMemory())/mb + "KB");
   }
   
-  public static void main(String args[]){
-    /*
-    File file = new File("/Users/Tin/Desktop/test.txt");
-    try {
-      String line = FileUtils.readLines(file).get(2).toString();
-      System.out.println("|" + line + "|");
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-    */
-    
-    
+  public static void main(String args[]){    
     try {
       Options options = new Options("conf/engine.conf");
       IndexerInvertedOccurrence a = new IndexerInvertedOccurrence(options);
-      a.constructIndex();
-      //a.loadIndex();
-      /*
-      QueryPhrase q11 = new QueryPhrase("\"Bert Kaempfert\" television");
-      //QueryPhrase q12 = new QueryPhrase("\"new york city\" film");
+      //a.constructIndex();
+      a.loadIndex();
+      //a.getPostingList("zatanna");
+      
+      
+      System.out.println(a._index.containsKey("zatanna"));
+      //QueryPhrase q11 = new QueryPhrase("which");
+      QueryPhrase q12 = new QueryPhrase("\"zatanna zatara\" Catwoman imprison");
       //QueryPhrase q13 = new QueryPhrase("\"kickass kicktin\"");
-      DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
-      System.out.println(d11._docid);
-      //DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
-      //System.out.println(d12._docid);
+      //DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
+      //System.out.println(d11._docid);
+      DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
+      System.out.println(d12.getUrl());
       //DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
       //System.out.println(d13._docid);
-      */
       /*
       QueryPhrase q11 = new QueryPhrase("kicktin");
       DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
@@ -685,9 +701,5 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       e.printStackTrace();
     }
     
-  }
-  public Document nextDoc(Query query, int docid) {
-    // TODO Auto-generated method stub
-    return null;
   }
 }

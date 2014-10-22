@@ -154,12 +154,14 @@ class QueryHandler implements HttpHandler {
     }
 
     // Processing the query.
-    Query processedQuery = new Query(cgiArgs._query);
+    QueryPhrase processedQuery = new QueryPhrase(cgiArgs._query);
+    //Query processedQuery = new Query(cgiArgs._query);
     processedQuery.processQuery();
 
     // Ranking.
     Vector<ScoredDocument> scoredDocs =
         ranker.runQuery(processedQuery, cgiArgs._numResults);
+    //System.out.println(scoredDocs.size());
     StringBuffer response = new StringBuffer();
     switch (cgiArgs._outputFormat) {
     case TEXT:
