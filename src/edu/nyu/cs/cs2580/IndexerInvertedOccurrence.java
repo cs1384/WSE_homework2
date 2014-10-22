@@ -261,48 +261,44 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   public void buildIndex(){
     int lineN = 1;
-    BufferedReader br;
-    StringTokenizer st;
+    int i = 0;
+    while(i<this._indexFileN){
+      lineN = readFile(i,lineN);
+      i++;
+    }
+  }
+  
+  public int readFile(int i, int lineN){
     try{
-      int i = 0;
-      while(i<this._indexFileN){
-        if(i%10==0){
-          System.gc();
-          this.printRuntimeInfo("=======check========");
-        }
-        System.out.println("Scanning /Occurance_Index_"+i+".txt...");
-        br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
-        int fre, op, j;
-        String line = br.readLine();
-        while(line!=null){
-          this._uniqueTerms++;
-          st = new StringTokenizer(line);
-          String term = st.nextToken();
-          fre = 0;
-          while(st.hasMoreTokens()){
-            st.nextToken(); //docid
-            op = Integer.parseInt(st.nextToken()); //occurance
-            fre += op;
-            for(j=0;j<op;j++){
-              st.nextToken();
-            }
+      this.printRuntimeInfo("=======check========");
+      System.out.println("Scanning /Occurance_Index_"+i+".txt...");
+      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
+      int fre, op, j;
+      String line = br.readLine();
+      while(line!=null){
+        this._uniqueTerms++;
+        StringTokenizer st = new StringTokenizer(line);
+        String term = st.nextToken();
+        fre = 0;
+        while(st.hasMoreTokens()){
+          st.nextToken(); //docid
+          op = Integer.parseInt(st.nextToken()); //occurance
+          fre += op;
+          for(j=0;j<op;j++){
+            st.nextToken();
           }
-          _index.put(term,new Record(lineN,fre));
-          lineN++;
-          //System.out.println(term);
-          line = br.readLine();
         }
-        br.close();
-        i++;
+        _index.put(term,new Record(lineN,fre));
+        lineN++;
+        line = br.readLine();
       }
+      br.close();
     }catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
-    }catch (OutOfMemoryError e){
-      System.out.println(lineN);
-      this.printRuntimeInfo("=======ouch!========");
-      e.printStackTrace();
     }
+    System.gc();
+    return lineN;
   }
   
   public void processDocument(String content, String filename){
