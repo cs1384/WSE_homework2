@@ -33,6 +33,7 @@ import org.apache.commons.io.FileUtils;
  */
 public class IndexerInvertedDoconly extends Indexer implements Serializable {
   private static final long serialVersionUID = 1077111905740085032L;
+  private int _roundtake;
   
   private class Record implements Serializable{
     int lineN = -1;
@@ -226,8 +227,10 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable {
         upper += 150;
         takeTurn = takeTurn + 1;
       }
+      _roundtake = takeTurn;
       mergeAllFiles(takeTurn);
       //finalConstruction(takeTurn);
+      /*
       BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/partial_cmpr_corpus_merged_" + takeTurn + ".txt")));
       String line = br.readLine();
       
@@ -245,9 +248,13 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable {
         }
         _op.put(list[0],freq);
         line = br.readLine();
+        
+        File f2 = new File(_options._indexPrefix + "/partial_cmpr_corpus_merged_" + takeTurn + ".txt");
+        f2.delete();
+      
       }
       br.close();
-
+*/
       
       
     }catch (Exception e){
@@ -329,13 +336,14 @@ private void constructPartialIndex(List<File> listOfFiles){
     
   public void makeIndex(){
     try{
-      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Doconly_index.txt")));
+    	
+        
+      BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/partial_cmpr_corpus_merged_"+ _roundtake +".txt")));
       String line = br.readLine();
-      //int lineN = 1;
-      Vector<Integer> freq = new Vector<Integer>();
       int i, op;
       while(line!=null){
-    	System.out.println(line);
+    	//System.out.println(line);
+        Vector<Integer> freq = new Vector<Integer>();
         String[] list = line.split(" ");
         for(i=1;i<list.length;i++){
           op = Integer.parseInt(list[i]);
@@ -430,6 +438,7 @@ private void constructPartialIndex(List<File> listOfFiles){
 
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
+	printRuntimeInfo("========Loading indices=======");
     String indexFile = _options._indexPrefix + "/DoconlyIndexer.idx";
     System.out.println("Load index from: " + indexFile);
 
@@ -440,13 +449,15 @@ private void constructPartialIndex(List<File> listOfFiles){
 
     this._documents = loaded._documents;
     this._op = loaded._op;
-    //makeIndex();
+    this._roundtake = loaded._roundtake;
+    makeIndex();
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
     this._totalTermFrequency = 0;
     int length = 0;
-    for (String rc : _op.keySet()) {
-    	length = _op.get(rc).size();
+    for (String rc : _index.keySet()) {
+    	length = _index.get(rc).size();
+    	//System.out.println(length);
     	this._totalTermFrequency += length;
     }
    
@@ -455,7 +466,7 @@ private void constructPartialIndex(List<File> listOfFiles){
     
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
         "with " + Long.toString(_totalTermFrequency) + " terms!");
-    
+    printRuntimeInfo("======== END!! ========");
   }
 
   @Override
@@ -511,20 +522,20 @@ private void constructPartialIndex(List<File> listOfFiles){
   }
   
   private int NextDocSingle(String query, int current){
-	Vector<Posting> postingList = _op.get(query);
+	Vector<Integer> postingList = _index.get(query);
 	int postingLength = postingList.size();
-	int minID = postingList.firstElement().did;
-	int maxID = postingList.lastElement().did;
+	int minID = postingList.firstElement();
+	int maxID = postingList.lastElement();
 	if (maxID == 0 || current > maxID){
 		return 99999999;
 	}else if (minID > current){
 		return minID;
 	}else{
 		int i = 0;
-		while(postingList.get(i).did < current){
+		while(postingList.get(i) < current){
 			i++;
 		}
-		return postingList.get(i).did;
+		return postingList.get(i);
 	}
 	
 	

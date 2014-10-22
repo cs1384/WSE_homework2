@@ -133,7 +133,7 @@ public abstract class Indexer {
         return new IndexerInvertedOccurrence(options);
       } else if (options._indexerType.equals("inverted-compressed")) {
         //return new IndexerInvertedCompressed(options);
-        return new IndexerInvertedCompressedDisk(options);
+        return new IndexerInvertedCompressed(options);
       }
       return null;
     }
