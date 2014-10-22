@@ -261,6 +261,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   public void buildIndex(){
     int lineN = 1;
+    BufferedReader br;
+    StringTokenizer st;
     try{
       int i = 0;
       while(i<this._indexFileN){
@@ -269,12 +271,12 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
           this.printRuntimeInfo("=======check========");
         }
         System.out.println("Scanning /Occurance_Index_"+i+".txt...");
-        BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
+        br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
         int fre, op, j;
         String line = br.readLine();
         while(line!=null){
           this._uniqueTerms++;
-          StringTokenizer st = new StringTokenizer(line);
+          st = new StringTokenizer(line);
           String term = st.nextToken();
           fre = 0;
           while(st.hasMoreTokens()){
