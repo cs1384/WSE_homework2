@@ -240,6 +240,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       String line = br.readLine();
       int lineN = 1;
       while(line!=null){
+        System.out.println("Writing /Occurance_Index_"+this._indexFileN+".txt");
         bw.write(line);
         bw.write("\n");
         if(lineN%10000==0){
@@ -263,6 +264,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       int i = 0;
       int lineN = 1;
       while(i<this._indexFileN){
+        if(i%10==0){
+          System.gc();
+        }
         System.out.println("Scanning /Occurance_Index_"+i+".txt...");
         BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
         int fre, op, j;
