@@ -263,6 +263,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       int i = 0;
       int lineN = 1;
       while(i<this._indexFileN){
+        System.out.println("Scanning /Occurance_Index_"+i+".txt...");
         BufferedReader br = new BufferedReader(new FileReader(new File(_options._indexPrefix + "/Occurance_Index_"+i+".txt")));
         int fre, op, j;
         String line = br.readLine();
@@ -284,6 +285,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
           line = br.readLine();
         }
         br.close();
+        i++;
       }
     }catch (IOException e) {
       // TODO Auto-generated catch block
@@ -362,6 +364,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     this._documents = loaded._documents;
     this._index = loaded._index;
     this._indexFileN = loaded._indexFileN;
+    System.out.println(this._indexFileN);
     buildIndex();
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
