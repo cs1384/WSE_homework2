@@ -119,7 +119,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     {
         e.printStackTrace();;
     }
-    makeIndex();
+    //makeIndex();
     
     System.out.println(
         "Indexed " + Integer.toString(_numDocs) + " docs with "
@@ -258,8 +258,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
-    File f = new File(_options._indexPrefix + "/Occurance_Index.txt");
-    f.delete();
+    //File f = new File(_options._indexPrefix + "/Occurance_Index.txt");
+    //f.delete();
   }
   
   public void buildIndex(){
@@ -381,6 +381,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     this._index = loaded._index;
     this._indexFileN = loaded._indexFileN;
     System.out.println(this._indexFileN);
+    makeIndex();
     buildIndex();
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
