@@ -286,6 +286,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
           }
           _index.put(term,new Record(lineN,fre));
           lineN++;
+          if(i==39);
+            System.out.println(term);
           line = br.readLine();
         }
         br.close();
@@ -295,6 +297,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }catch (OutOfMemoryError e){
+      System.out.println(lineN);
       this.printRuntimeInfo("=======ouch!========");
       e.printStackTrace();
     }
