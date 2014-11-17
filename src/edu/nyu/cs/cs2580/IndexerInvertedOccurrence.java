@@ -195,7 +195,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     }
   }
   
-  
   private void constructPartialIndex(List<File> listOfFiles, int batch){
     try{
       for (File file : listOfFiles){
@@ -265,6 +264,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   public void buildIndex(){
     int lineN = 1;
     int i = 0;
+    //this._indexFileN = 52; //test purpose
     while(i<=this._indexFileN){
       lineN = readFile(i,lineN);
       i++;
@@ -335,10 +335,20 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     Scanner s = new Scanner(content);
     while (s.hasNext()) {
       String token = s.next();
-      
+      /*
+      boolean print = false;
+      if(token.equals("any") || token.equals("google")){
+          System.out.println("===================");
+          print = true;
+      }
+      */
       stemmer.add(token.toCharArray(), token.length());
       stemmer.stem();
       token = stemmer.toString().toLowerCase();
+      //token = token.toLowerCase();
+      //if(print)
+          //System.out.println(token);
+      
             
       if(_op.containsKey(token)){
         if(_op.get(token).lastElement().did==docid){
@@ -421,17 +431,20 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     int did = docid;
     //keep getting document until no next available 
     while((did = nextDocByTerms(query._tokens,did))!=Integer.MAX_VALUE){
-      keep = false;
-      //check if the resulting doc contains all phrases 
-      if(query instanceof QueryPhrase){
-        for(Vector<String> phrase : ((QueryPhrase)query)._phrases){
-          //if not, break the for loop and get next doc base on tokens
-          if(nextPositionByPhrase(phrase,did,-1)==Integer.MAX_VALUE){
-            keep = true;
-            break;
-          }
+        System.out.println("= get doc from  tokens: " + did);
+        keep = false;
+        //check if the resulting doc contains all phrases 
+        if(query instanceof QueryPhrase){
+            for(Vector<String> phrase : ((QueryPhrase)query)._phrases){
+                //if not, break the for loop and get next doc base on tokens
+                int temp = nextPositionByPhrase(phrase,did,-1);
+                System.out.println("position:" + temp);
+                if(temp==Integer.MAX_VALUE){
+                    keep = true;
+                    break;
+                }
+            }
         }
-      }
       if(keep){
         continue;
       }else{
@@ -446,7 +459,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   public int nextPositionByPhrase(Vector<String> phrase, int docid, int pos){
     int did = nextDocByTerms(phrase, docid-1);
-    //System.out.println("docid"+docid);
+    System.out.println("== get doc from phrase: " + did);
     if(docid != did){
       return Integer.MAX_VALUE;
     }
@@ -531,12 +544,16 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   }
   
   public int nextDocByTerms(Vector<String> terms, int curDid){
+    System.out.println("nextDocByTerms: "+curDid);
     if(terms.size()<=0){
       if(curDid<=0){
+          //System.out.println("check0");
         return 1;
       }else if(curDid>=_numDocs){
+          //System.out.println("check1");
         return Integer.MAX_VALUE;
       }else{
+          //System.out.println("check2");
         return curDid+1;
       }
     }
@@ -549,6 +566,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       tempDid = nextDocByTerm(terms.get(i), curDid);
       //one of the term will never find next
       if(tempDid==Integer.MAX_VALUE){
+          //System.out.println("check3");
         return Integer.MAX_VALUE;
       }
       if(tempDid>largestDid){
@@ -559,26 +577,33 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       }
     }    
     if(returnable){
+        //System.out.println("check4");
       return did;
     }else{
+        //System.out.println("check5");
       return nextDocByTerms(terms, largestDid-1);
     }
   }
   
   public int nextDocByTerm(String term, int curDid){
-    Vector<Posting> op = this.getPostingList(term);
-    if(op.size()>0){
-      int largest = op.lastElement().did;
-      //System.out.println("largest"+largest);
-      if(largest <= curDid){
-        return Integer.MAX_VALUE;
+      System.out.println("term: "+term);
+      Vector<Posting> op = this.getPostingList(term);
+      System.out.println("posting list length: "+ op.size());
+      if(op.size()>0){
+          int largest = op.lastElement().did;
+          //System.out.println("largest"+largest);
+          if(largest <= curDid){
+              //System.out.println("check6");
+              return Integer.MAX_VALUE;
+          }
+          if(op.firstElement().did > curDid){
+              return op.firstElement().did;
+          }
+          return binarySearchDoc(op,0,op.size()-1,curDid);
+      }else{
+          //System.out.println("check7");
+          return Integer.MAX_VALUE;
       }
-      if(op.firstElement().did > curDid){
-        return op.firstElement().did;
-      }
-      return binarySearchDoc(op,0,op.size()-1,curDid);
-    }else
-      return Integer.MAX_VALUE;
   }
   
   public int binarySearchDoc(Vector<Posting> op, int low, int high, int curDid){
@@ -601,7 +626,13 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   }
   
   public Vector<Posting> getPostingList(String term){
-    Vector<Posting> result = new Vector<Posting>(); 
+    Vector<Posting> result = new Vector<Posting>();
+    
+    Stemmer stemmer = new Stemmer(); 
+    stemmer.add(term.toCharArray(), term.length());
+    stemmer.stem();
+    term = stemmer.toString().toLowerCase();
+    
     if(!_index.containsKey(term)){
       return result;
     }else{
@@ -676,17 +707,17 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       a.loadIndex();
       //a.getPostingList("zatanna");
       
-      
-      System.out.println(a._index.containsKey("zatanna"));
+      //System.out.println(a._index.containsKey("google"));
+      //System.out.println(a._index.containsKey("north"));
       //QueryPhrase q11 = new QueryPhrase("which");
-      QueryPhrase q12 = new QueryPhrase("\"zatanna zatara\" Catwoman imprison");
-      //QueryPhrase q13 = new QueryPhrase("\"kickass kicktin\"");
+      QueryPhrase q12 = new QueryPhrase("\"north american\" any");
+      QueryPhrase q13 = new QueryPhrase("\"web searching\" google");
       //DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
       //System.out.println(d11._docid);
-      DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
-      System.out.println(d12.getUrl());
-      //DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
-      //System.out.println(d13._docid);
+      //DocumentIndexed d12 = (DocumentIndexed) a.nextDoc(q12, -1);
+      //System.out.println(d12.getUrl());
+      DocumentIndexed d13 = (DocumentIndexed) a.nextDoc(q13, -1);
+      System.out.println(d13.getUrl());
       /*
       QueryPhrase q11 = new QueryPhrase("kicktin");
       DocumentIndexed d11 = (DocumentIndexed) a.nextDoc(q11, -1);
